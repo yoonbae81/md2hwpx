@@ -24,6 +24,8 @@ cd web && npm run build # web/dist 정적 산출물 빌드
   `rm web/src/lib/wasm/.gitignore`.
   (wasm-pack 내장 wasm-opt는 비활성화되어 있고, 산출물 `web/src/lib/wasm/`은 커밋된다. wasm-pack이 out-dir에 `*`만 담은
   `.gitignore`를 자동 생성하므로 지우지 않으면 산출물이 커밋에서 누락되어 Vercel 빌드가 깨진다.)
+- 저장소 루트 `.cargo/config.toml`이 wasm32 타깃에 `+bulk-memory` 등 target-feature를 켠다(더 작은 LLVM 코드 생성,
+  최신 브라우저 기본 지원 기능만). 임의로 지우면 wasm 용량이 다시 커진다.
 - Wasm 타겟에서는 `regex`가 regex-lite로 교체된다(루트 크레이트 `Cargo.toml`의 타겟별 의존성). regex-lite 서브셋(리터럴 한글, `(?i)` ASCII, `\d`/`\s`, named group)을 벗어나지 않도록 한다.
 - 저장소 루트의 `template.hwpx`, `source.txt` 및 수동 검증용 `.hwpx` 파일은 `workspace/` 아래에 두며, 이 디렉터리 전체가 `.gitignore`로 제외되어 있다. 픽스처 바이너리를 커밋하지 않는다.
 
