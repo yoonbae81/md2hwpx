@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd web && npm ci && npm run build",
+  "outputDirectory": "web/dist",
+  "redirects": [
+    { "source": "/", "destination": "/hwpx/compile", "permanent": false },
+    { "source": "/hwpx", "destination": "/hwpx/compile", "permanent": false },
+    { "source": "/hwpx/m2h", "destination": "/hwpx/compile", "permanent": false },
+    { "source": "/hwpx/h2m", "destination": "/hwpx/parse", "permanent": false },
+    { "source": "/m2h/:path*", "destination": "/hwpx/compile", "permanent": false },
+    { "source": "/h2m/:path*", "destination": "/hwpx/parse", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/hwpx/(.*)", "destination": "/hwpx/index.html" },
+    { "source": "/(.*)", "destination": "/hwpx/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/hwpx/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "hwpx-wasm",
+  "type": "module",
+  "description": "Wasm bindings for the md2hwpx compiler and hwpx2md converter",
+  "version": "1.0.0",
+  "files": [
+    "hwpx_wasm_bg.wasm",
+    "hwpx_wasm.js",
+    "hwpx_wasm.d.ts"
+  ],
+  "main": "hwpx_wasm.js",
+  "types": "hwpx_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
