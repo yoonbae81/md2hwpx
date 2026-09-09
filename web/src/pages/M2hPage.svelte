@@ -50,6 +50,7 @@
   let showGuide = $state(false)
   let boxDragOver = $state(false)
   let sheetDragOver = $state(false)
+  let editorTextDragOver = $state(false)
 
   let copied = $state(false)
   let promptCopied = $state(false)
@@ -263,6 +264,39 @@
       showPromptSheet = false
     }
   }
+
+  // 텍스트영역은 .md/.txt 파일 드래그를 받는다. 텍스트 드래그는 편집기 기본
+  // 동작을 유지하고, 파일 2개 이상·다른 확장자는 조용히 무시한다.
+  function onEditorDragOver(e: DragEvent) {
+    const isFileDrag = Array.from(e.dataTransfer?.types ?? []).includes('Files')
+    if (!isFileDrag) return
+    e.preventDefault()
+    editorTextDragOver = true
+  }
+
+  function onEditorDragLeave() {
+    editorTextDragOver = false
+  }
+
+  function onEditorDrop(e: DragEvent) {
+    const isFileDrag = Array.from(e.dataTransfer?.types ?? []).includes('Files')
+    if (!isFileDrag) return
+    e.preventDefault()
+    e.stopPropagation()
+    editorTextDragOver = false
+    const files = Array.from(e.dataTransfer?.files ?? [])
+    if (files.length !== 1) return // 파일 1개만 지원
+    const file = files[0]
+    const name = file.name.toLowerCase()
+    if (!name.endsWith('.md') && !name.endsWith('.txt')) return
+    void file
+      .text()
+      .then((content) => {
+        text = content
+        scheduleSave()
+      })
+      .catch((err) => console.error(err))
+  }
 </script>
 
 <svelte:window onkeydown={onKeydown} />
@@ -327,11 +361,16 @@
     <textarea
       bind:value={text}
       oninput={scheduleSave}
+      ondragover={onEditorDragOver}
+      ondragleave={onEditorDragLeave}
+      ondrop={onEditorDrop}
       spellcheck="false"
       autocomplete="off"
       aria-label="마크다운 에디터"
-      placeholder="여기에 마크다운을 붙여넣어 보고서를 작성하세요"
-      class="absolute inset-0 h-full w-full resize-none overflow-y-auto bg-transparent px-4 pb-4 pr-12 pt-4 font-mono text-sm leading-relaxed outline-none placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
+      placeholder="여기에 마크다운을 붙여넣거나 .md/.txt 파일을 끌어다 놓으세요"
+      class="absolute inset-0 h-full w-full resize-none overflow-y-auto px-4 pb-4 pr-12 pt-4 font-mono text-sm leading-relaxed outline-none placeholder:text-neutral-400 dark:placeholder:text-neutral-600 {editorTextDragOver
+        ? 'bg-emerald-50 dark:bg-emerald-950/40'
+        : 'bg-transparent'}"
     ></textarea>
     {#if text.trim().length > 0}
       <button
