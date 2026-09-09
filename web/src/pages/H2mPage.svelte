@@ -123,6 +123,42 @@
     }
   }
 
+  /** 파일 여러 개 일괄 처리: hwpx만 곧바로 md로 연속 다운로드하고 마지막으로
+   *  성공한 파일만 편집기에 남긴다. hwpx가 아니거나 손상된 파일은 조용히 건너뛴다. */
+  async function convertMany(files: File[]) {
+    if (converting) return
+    converting = true
+    let last: { name: string; markdown: string; warnings: string[] } | undefined
+    try {
+      await ensureWasm()
+      for (const file of files) {
+        try {
+          const bytes = new Uint8Array(await file.arrayBuffer())
+          const result = JSON.parse(convert_hwpx(bytes, file.name)) as {
+            markdown: string
+            warnings: string[]
+          }
+          // 브라우저가 연속 다운로드를 무시하지 않도록 사이에 간격을 둔다
+          if (last) await new Promise((resolve) => setTimeout(resolve, 300))
+          downloadText(result.markdown, buildFilename(file.name))
+          last = { name: file.name, markdown: result.markdown, warnings: result.warnings }
+        } catch {
+          // hwpx가 아닌 파일은 조용히 스킵
+        }
+      }
+    } catch (e) {
+      console.error(e)
+      showErrorMessage(toUserError(e))
+    } finally {
+      converting = false
+    }
+    if (last) {
+      text = last.markdown
+      warnings = last.warnings
+      sourceName = last.name
+    }
+  }
+
   // 텍스트영역은 파일 드래그를 항상 변환 대상으로 받는다(변환 결과가 표시된
   // 뒤에도). 텍스트 드래그는 편집기 기본 동작을 유지한다.
   function onTextDragOver(e: DragEvent) {
@@ -142,16 +178,18 @@
     e.preventDefault()
     e.stopPropagation()
     textDragOver = false
-    const file = e.dataTransfer?.files?.[0]
-    if (file) void convertFile(file)
+    const files = Array.from(e.dataTransfer?.files ?? [])
+    if (files.length === 1) void convertFile(files[0])
+    else if (files.length > 1) void convertMany(files)
   }
 
   function onBoxDrop(e: DragEvent) {
     e.preventDefault()
     e.stopPropagation()
     boxDragOver = false
-    const file = e.dataTransfer?.files?.[0]
-    if (file) void convertFile(file)
+    const files = Array.from(e.dataTransfer?.files ?? [])
+    if (files.length === 1) void convertFile(files[0])
+    else if (files.length > 1) void convertMany(files)
   }
 
   function onFilePicked(e: Event) {
