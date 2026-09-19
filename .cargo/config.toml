@@ -1,0 +1,8 @@
+# wasm32 빌드에 최신 WASM 기능을 명시 활성화해 LLVM이 더 작은 코드
+# (memory.copy/fill 기반 memcpy, 트랩 없는 float→int 등)를 생성하게 한다.
+# 브라우저 기본 지원 기능만 켠다(스레드/atomics는 제외).
+[target.wasm32-unknown-unknown]
+rustflags = [
+  "-C",
+  "target-feature=+bulk-memory,+mutable-globals,+nontrapping-fptoint,+sign-ext",
+]

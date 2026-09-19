@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+/* 공유 컴포넌트(web/shared)는 앱 루트 밖이라 자동 탐지가 안 된다 */
+@source "../../shared/";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+}
+
+/* 다크 모드 overscroll 영역까지 배경색 유지 */
+html {
+  background-color: #fafafa;
+}
+
+html.dark {
+  background-color: #0a0a0a;
+}
+
+/* 안내 오버레이 본문(instruction.md 렌더링 결과) */
+.guide-body h1 {
+  font-size: 17pt;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.guide-body h2 {
+  margin-top: 1rem;
+  font-size: 12.5pt;
+  font-weight: 700;
+}
+
+.guide-body p,
+.guide-body li {
+  margin-top: 0.25rem;
+  font-size: 11.75pt;
+  line-height: 1.625;
+  color: var(--color-neutral-600);
+}
+
+.guide-body ol {
+  margin-top: 0.25rem;
+  padding-left: 1.25rem;
+  list-style: decimal;
+}
+
+.guide-body strong {
+  font-weight: 600;
+  color: var(--color-neutral-900);
+}
+
+.dark .guide-body p,
+.dark .guide-body li {
+  color: var(--color-neutral-400);
+}
+
+.dark .guide-body strong {
+  color: var(--color-neutral-100);
+}

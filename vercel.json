@@ -1,0 +1,36 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd web && npm ci && npm run build",
+  "outputDirectory": "web/dist",
+  "regions": ["icn1"],
+  "redirects": [
+    { "source": "/", "destination": "/hwpx/compile", "permanent": false },
+    { "source": "/hwpx", "destination": "/hwpx/compile", "permanent": false },
+    { "source": "/hwpx/m2h", "destination": "/hwpx/compile", "permanent": false },
+    { "source": "/hwpx/h2m", "destination": "/hwpx/parse", "permanent": false },
+    { "source": "/m2h/:path*", "destination": "/hwpx/compile", "permanent": false },
+    { "source": "/h2m/:path*", "destination": "/hwpx/parse", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/hwpx/(.*)", "destination": "/hwpx/index.html" },
+    { "source": "/(.*)", "destination": "/hwpx/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "accelerometer=(), camera=(), microphone=()" }
+      ]
+    },
+    {
+      "source": "/hwpx/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
+}
