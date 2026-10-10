@@ -21,7 +21,7 @@ const LINE_WIDTH_UNITS: i64 = 48_188;
 const UNIT_PER_PERCENT: f64 = 1500.0 / 50.0;
 
 /// 보정 대상 초과 글자 수 상한(한글 기준). 그 이상은 자간으로 못 넣는다.
-const MAX_OVER_CHARS: i64 = 4;
+const MAX_OVER_CHARS: i64 = 6;
 
 /// 자간 축소 상한(%). 그 이상은 미학적으로 무리다.
 const MAX_PERCENT: i64 = 12;
