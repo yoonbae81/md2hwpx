@@ -158,8 +158,10 @@ fn is_15pt_paragraph(paragraph: &NodeRef, header_root: &NodeRef) -> bool {
 }
 
 /// 컴파일 후처리: 15pt(휴먼명조) 문단이 줄 경계를 1~4글자 살짝 넘칠 때
-/// 자간을 줄여 줄 수를 유지한다. 2→1줄(1줄 경계 초과)과 3→2줄(2줄 경계
-/// 초과)을 각각 판정한다. 문단당 한 번, 가장 큰 경계 기준.
+/// 자간을 줄여 줄 수를 유지한다. depth1(□)/depth2(○)/depth3 전 레벨이
+/// 대상이다 — 세 레벨 모두 15pt 문단이고 들여쓰기 prefix 폭만 다르므로,
+/// 경계는 문단 폭 계산에 prefix가 포함되어 자동으로 반영된다.
+/// 2→1줄(1줄 경계 초과)과 3→2줄(2줄 경계 초과)을 각각 판정한다.
 pub fn apply_line_fit(section_root: &NodeRef, header_root: &NodeRef) -> Result<bool> {
     let mut changed = false;
     for paragraph in iter_elements(section_root) {
