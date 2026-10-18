@@ -78,10 +78,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:
-      name: cloudflare-pilot
+      name: Cloudflare
       url: ${{ needs.validate.outputs.smoke_url }}
     concurrency:
-      group: cloudflare-pilot
+      group: Cloudflare
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
