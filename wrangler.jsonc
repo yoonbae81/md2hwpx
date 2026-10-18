@@ -3,6 +3,10 @@
   "name": "md2hwpx",
   "compatibility_date": "2026-10-18",
   "workers_dev": true,
+  // NOTE: xcv.kr/hwpx* zone route is dashboard/API-managed (bound to this worker
+  // on 2026-10-18). Do NOT add `routes` here — the CI deploy token intentionally
+  // has no zone-route permission (docs/cloudflare-deployment.md), so a config
+  // route would fail the deploy.
   "assets": {
     "directory": "./web/dist",
     "html_handling": "none",
