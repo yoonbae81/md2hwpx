@@ -3,6 +3,8 @@
 
 pub mod cli;
 pub mod hwpx;
+pub mod linefit;
+pub mod metrics;
 pub mod patterns;
 pub mod postprocess;
 pub mod render;
@@ -72,7 +74,13 @@ pub fn compile_hwpx_labeled(
     let parenthesis_changed = postprocess::apply_parenthesis_size(&root, &header_root)?;
     // 붙은 별표는 run 재구성 후처리들이 모두 지나간 뒤에 분할해야 한다.
     let asterisk_changed = postprocess::apply_attached_asterisk(&root, &header_root)?;
-    let header_xml = if bold_changed || parenthesis_changed || asterisk_changed {
+    // 15pt(휴먼명조) 문단의 줄넘침은 run 재구성이 끝난 뒤 판정한다.
+    let linefit_changed = linefit::apply_line_fit(&root, &header_root)?;
+    let header_xml = if bold_changed
+        || parenthesis_changed
+        || asterisk_changed
+        || linefit_changed
+    {
         Some(xmltree::serialize(&header_root, true).into_bytes())
     } else {
         None

@@ -69,13 +69,25 @@ npm run dev     # 개발 서버 http://localhost:8292/ (포트 8292 단일 실�
   산출물(`web/src/lib/wasm/`)은 저장소에 커밋된다. wasm-pack이 out-dir에 `*`만 담은 `.gitignore`를 자동 생성하므로
   이를 지우지 않으면 산출물이 커밋에서 누락되어 배포 빌드가 실패한다.
 
-## 배포 (Vercel)
+## 배포
 
-루트 `vercel.json` 단일 설정으로 웹앱을 빌드하여 `web/dist`로 배포한다:
+`xcv.kr/hwpx`는 Cloudflare Workers Static Assets로 서빙된다(2026-10-18 Vercel에서 전환).
 
-- **배포 주소**: `https://md2hwpx.vercel.app/hwpx/compile` (역변환: `/hwpx/parse`)
-- **SPA 라우팅**: 모든 서브패스 요청이 `index.html`로 rewrite되어 직접 URL 접근 및 새로고침을 지원한다.
-- **캐시 정책**: `/assets/*` 경로는 1년 immutable 캐시가 적용된다.
+```sh
+cd web && npm run build   # web/dist/hwpx 산출물
+npm run cf:deploy         # wrangler deploy (root package.json) — 파일럿/수동 배포
+```
+
+- **주소**: `https://xcv.kr/hwpx/compile` (역변환: `/hwpx/parse`), 파일럿 origin `https://md2hwpx.y-e2f.workers.dev`
+- **라우팅**: xcv.kr zone의 gateway Worker(quota 저장소 `gateway/worker.ts`)가 `xcv.kr/hwpx*`를 받아
+  파일럿 Worker `md2hwpx`로 전달한다. `_redirects`(200 proxy·302)와 `_headers`(CSP·캐시)는
+  `scripts/prepare-cloudflare.mjs`가 `vercel.json`에서 생성한다.
+- **CI**: PR은 secret 없는 검증(cargo test → 웹 빌드 → 브라우저 스모크 → wrangler dry-run),
+  `workflow_dispatch` 파일럿은 보호 환경 승인 후 배포한다(`.github/workflows/cloudflare.yml`,
+  `docs/cloudflare-deployment.md`).
+- **롤백**: gateway upstream을 `md2hwpx.vercel.app`으로 되돌려 quota 저장소 CI 재배포
+  (quota 커밋 6847fef revert), 또는 Cloudflare 파일럿 Worker를 직전 버전으로 rollback.
+- Vercel(`md2hwpx.vercel.app`)은 복구 대상으로 유지 중이다.
 
 ## 수동 왕복 스모크 검증
 

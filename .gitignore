@@ -40,3 +40,9 @@ web/*/node_modules
 # Vercel 배포 스테이징 (빌드 시 생성)
 web/deploy_root
 deploy_root/
+
+# Cloudflare 이전: 배포 도구
+node_modules/
+.wrangler/
+test-results/
+playwright-report/
