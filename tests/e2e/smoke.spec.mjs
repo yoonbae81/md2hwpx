@@ -20,6 +20,11 @@ test('compile 화면에서 WASM 엔진으로 실제 변환·다운로드가 된�
   })
 
   await page.goto('/hwpx/compile')
+  // 최초 방문 안내 오버레이는 아무 곳이나 누르면 닫힌다.
+  const overlay = page.locator('div.fixed.inset-0.z-50')
+  if (await overlay.isVisible().catch(() => false)) await overlay.click({ position: { x: 5, y: 5 } })
+  await expect(overlay).toBeHidden()
+
   await expect(page.getByLabel('마크다운 에디터')).toBeVisible()
   await page.getByLabel('마크다운 에디터').fill(SAMPLE_MD)
 
@@ -42,7 +47,8 @@ test('parse 화면이 렌더링되고 직접 진입을 지원한다', async ({ p
   const errors = []
   page.on('pageerror', e => errors.push(String(e)))
   await page.goto('/hwpx/parse')
-  await expect(page.locator('textarea').first()).toBeVisible()
+  // 두 페이지가 모두 마운트되어 있으므로 활성(보이는) textarea를 검증한다.
+  await expect(page.locator('textarea:visible')).toHaveCount(1)
   await expect(page.locator('#print-area')).toHaveCount(0) // 편집 모드에서는 미리보기 영역이 없다
   expect(errors).toEqual([])
 })
