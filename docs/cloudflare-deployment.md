@@ -76,7 +76,19 @@ SMOKE_BASE_URL="$URL" npm run test:browser
 - 기존 인쇄 중복 가능성 등 기존 결함은 재현·별도 이슈·승인된 제외 범위를 기록한다. 신규 회귀를 기존 결함으로 숨기지 않는다.
 - 두 롤백 경로의 리허설 및 **명시적인 사용자 운영 승인**이 필요하다.
 
-## 운영 전환 — 현재 워크플로에 없음
+## 운영 전환 기록 (2026-10-18, 사용자 승인 완료)
+
+사용자가 파일럿 결과를 확인하고 운영 전환을 승인했다. 적용 순서와 검증 결과:
+
+1. **Worker Route**: `xcv.kr/hwpx*` → Worker `md2hwpx`. CF edge가 `/hwpx*`를 origin(Caddy)보다 먼저 처리한다. 응답 헤더 `server: cloudflare`, `via: 2.0 Caddy` 소멸로 확인.
+2. **Caddy(edge.xcv.kr)**: `redir /hwpx /hwpx/ 308`과 `handle /hwpx/* → https://md2hwpx.vercel.app` 블록 삭제. 백업: `/etc/caddy/Caddyfile.bak-20261018-remove-hwpx`. `redir /m2h* /hwpx/compile 301`은 Caddy에 유지한다(worker route pattern 밖이므로). reload 완료.
+3. **레거시 `/h2m` 수정**: 기존 Caddy에도 `/h2m` 리다이렉트가 없어 404였던 것을 `redir /h2m* /hwpx/parse 302`로 추가. 전환 후 검증에서 발견·보완했다.
+4. **전환 후 검증 (2026-10-18)**: `/hwpx/compile`, `/hwpx/parse` 200, `/hwpx` → compile 리다이렉트, `/m2h*` 301, `/h2m*` 302, WASM 자산 200(412KB), `template.hwpx` 200, `/blog/`·`/mask/`·`/math/` 무영향.
+5. **롤백 경로 B(구체화)**: ① Cloudflare에서 `xcv.kr/hwpx*` route 삭제 → ② Caddyfile.bak-20261018-remove-hwpx의 `/hwpx` 블록 복원 후 reload. Vercel 프로젝트는 삭제하지 않았다.
+
+여전히 남은 수동 검증: 모바일 Safari/Chrome 실기기 확인, 전환 전후 localStorage/IndexedDB 보존 확인(동일 origin이므로 이론상 무영향이지만 실기기 확인 권장), 다음 날 재점검. Vercel은 최소 7일간 복구 대상으로 유지.
+
+## 운영 전환 — 이전 기록(참고용, 완료됨)
 
 live smoke와 수동/mobile Safari 검증 증거가 승인되기 전에는 production CI를 추가하거나 gateway를 변경하지 않는다. 이후 별도 검토에서 production environment 승인과 직렬 배포 정책을 설계한다. 환경 이름은 `Cloudflare`지만 이 환경은 파일럿 전용 게이트다. 운영 전환용 environment는 별도로 만든다.
 
