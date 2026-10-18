@@ -19,10 +19,11 @@ test('compile 화면에서 WASM 엔진으로 실제 변환·다운로드가 된�
     if (m.type() === 'error') errors.push(m.text())
   })
 
-  await page.goto('/hwpx/compile')
-  // 최초 방문 안내 오버레이는 아무 곳이나 누르면 닫힌다.
+  await page.goto('/hwpx/compile', { waitUntil: 'networkidle' })
+  // 최초 방문 안내 오버레이는 instruction.md 로드 후 늦게 나타난다. networkidle로
+  // 렌더링을 기다린 뒤 닫고(안 떴으면 조용히 통과), 반드시 사라졌음을 확인한다.
   const overlay = page.locator('div.fixed.inset-0.z-50')
-  if (await overlay.isVisible().catch(() => false)) await overlay.click({ position: { x: 5, y: 5 } })
+  await overlay.click({ position: { x: 5, y: 5 }, timeout: 5_000 }).catch(() => {})
   await expect(overlay).toBeHidden()
 
   await expect(page.getByLabel('마크다운 에디터')).toBeVisible()
