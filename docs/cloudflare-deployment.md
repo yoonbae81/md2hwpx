@@ -12,7 +12,7 @@
 
 ## 관리자 사전 설정 — 실행 전 필수
 
-1. GitHub Environment **`cloudflare-pilot`**을 먼저 생성한다. Required reviewers와 승인 규칙을 설정하고 가능하면 자기 승인 및 관리자 우회를 막는다. 배포 허용 브랜치를 검토된 브랜치로 제한한다. GitHub 요금제/저장소 공개 범위에서 보호 규칙이 실제 적용되는지 확인한다. YAML의 environment 선언만으로 required reviewer가 생기지 않는다. 보호 환경 승인이 불가능하면 파일럿을 실행하지 않는다.
+1. GitHub Environment **`Cloudflare`**을 먼저 생성한다. Required reviewers와 승인 규칙을 설정하고 가능하면 자기 승인 및 관리자 우회를 막는다. 배포 허용 브랜치를 검토된 브랜치로 제한한다. GitHub 요금제/저장소 공개 범위에서 보호 규칙이 실제 적용되는지 확인한다. YAML의 environment 선언만으로 required reviewer가 생기지 않는다. 보호 환경 승인이 불가능하면 파일럿을 실행하지 않는다.
 2. 이 environment에만 `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` secrets를 등록한다. PR 검증에는 secrets를 넣지 않는다. token은 대상 계정의 파일럿 Worker 배포에 필요한 최소 권한으로 제한하며 DNS/zone route 변경 권한은 주지 않는다. 토큰을 로그·문서·채팅에 쓰지 않는다.
 3. 검토할 ref의 `cf:deploy`와 Wrangler 설정을 확인한다. **별도 파일럿 Worker, workers.dev 활성화, custom domain/운영 routes 없음**이 승인 조건이다. `npm run cf:deploy`가 파일럿만 대상으로 하는지 확인한다. 이 워크플로는 Worker 이름을 덮어쓰거나 운영 배포를 안전한 것으로 자동 판정하지 않는다.
 4. 계정 subdomain과 Worker 이름으로 예상되는 `https://WORKER.SUBDOMAIN.workers.dev`를 확보한다. 입력 URL은 실제 배포 대상과 같아야 한다. 환경 승인자는 배포 설정과 입력 URL의 일치를 확인한다. hostname 허용 검사만으로 새 배포의 identity가 증명되지는 않는다.
@@ -41,8 +41,8 @@ npm run cf:dry-run
 
 1. Actions → **Cloudflare validation and pilot** → Run workflow에서 검토된 ref를 선택한다. GitHub가 수동 실행 UI를 제공하려면 workflow_dispatch 정의가 기본 브랜치에 있어야 한다. 이 조건을 맞추려는 임의 push/merge는 본 작업 범위가 아니다.
 2. `smoke_url`에 **origin만** 입력한다. 예시 형식은 `https://WORKER.SUBDOMAIN.workers.dev`이며 실제 이름으로 바꾼다. `/hwpx/compile`은 붙이지 않는다. 선택적 마지막 `/`만 허용한다. HTTPS와 정확히 두 hostname label 뒤의 `.workers.dev`만 허용한다. custom domain, HTTP, port, 사용자정보, 추가 path/query/fragment 및 우회 문자열은 배포 전 검증에서 거부한다. smoke 스크립트가 `/hwpx` 경로를 검사한다.
-3. 동일한 secret-free 검증이 먼저 통과해야 한다. `cloudflare-pilot` 검토자는 SHA, diff, artifact, 파일럿 설정과 URL을 확인한 뒤 environment 승인을 내린다. workflow_dispatch 권한만으로 보호 환경 승인을 대체하지 않는다.
-4. 파일럿 job은 `cloudflare-pilot` concurrency group, `cancel-in-progress: false`로 겹쳐 실행되지 않는다. GitHub concurrency는 FIFO 큐를 보장하지 않으며 대기 실행이 대체될 수 있으므로 필요한 실행의 상태를 직접 확인한다.
+3. 동일한 secret-free 검증이 먼저 통과해야 한다. `Cloudflare` 검토자는 SHA, diff, artifact, 파일럿 설정과 URL을 확인한 뒤 environment 승인을 내린다. workflow_dispatch 권한만으로 보호 환경 승인을 대체하지 않는다.
+4. 파일럿 job은 `Cloudflare` concurrency group, `cancel-in-progress: false`로 겹쳐 실행되지 않는다. GitHub concurrency는 FIFO 큐를 보장하지 않으며 대기 실행이 대체될 수 있으므로 필요한 실행의 상태를 직접 확인한다.
 5. 승인된 job이 의존성과 Chromium을 설치하고 검증 artifact를 복원한 뒤 다음 명령을 실행한다. 두 Cloudflare secrets는 deploy step에만 전달한다.
 
 ```sh
@@ -69,7 +69,7 @@ SMOKE_BASE_URL="$URL" npm run test:browser
 
 ## 운영 전환 — 현재 워크플로에 없음
 
-live smoke와 수동/mobile Safari 검증 증거가 승인되기 전에는 production CI를 추가하거나 gateway를 변경하지 않는다. 이후 별도 검토에서 production environment 승인과 직렬 배포 정책을 설계한다. 현재 `cloudflare-pilot`을 production으로 이름만 바꾸지 않는다.
+live smoke와 수동/mobile Safari 검증 증거가 승인되기 전에는 production CI를 추가하거나 gateway를 변경하지 않는다. 이후 별도 검토에서 production environment 승인과 직렬 배포 정책을 설계한다. 환경 이름은 `Cloudflare`지만 이 환경은 파일럿 전용 게이트다. 운영 전환용 environment는 별도로 만든다.
 
 실제 gateway 운영 소유자, 레포/설정, 배포 권한과 현재 Vercel upstream을 확인한다. 동일 origin과 `/hwpx` prefix 전달을 유지하고 `/hwpx` 경로만 전환하는 변경을 사용자에게 승인받는다. `xcv.kr` 전체 DNS, 공유 `/`, 다른 서비스 route는 변경 대상이 아니다. 내부 backend hostname 노출이나 gateway 헤더 덮어쓰기도 검증한다.
 
