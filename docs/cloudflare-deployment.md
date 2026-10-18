@@ -1,5 +1,14 @@
 # Cloudflare 파일럿 배포 및 운영 전환 런북
 
+## 파일럿 실행 기록 (2026-10-18)
+
+- 실행: Actions run 39099483782 (`workflow_dispatch`, ref `cf-migration` @ `ae4c41d`), 환경 승인: yoonbae81
+- 파일럿 URL: `https://md2hwpx.y-e2f.workers.dev` — **파일럿 전용이며 운영 origin이 아니다**
+- 배포 Version ID: `1766fd4c-3358-470b-8bee-a33da9c08795` (Worker `md2hwpx`, 2차 실행 — 1차는 39099188742, 브라우저 스모크 오버레이 타이밍 버그로 실패 후 스펙 수정)
+- 결과: validate 전 단계 통과(cargo test 166, deploy rules, 빌드, 로컬 브라우저 스모크), Live HTTP 스모크 15/15, Live 브라우저 스모크 3/3
+- 독립 검증: WASM `application/wasm` + `max-age=31536000, immutable`, 누락 자산 404(HTML fallback 없음), `/hwpx/template.hwpx` 빌드 산출물과 바이트 동일
+- 이 기록은 파일럿 origin 검증일 뿐이다. 운영 데이터 보존·mobile Safari·gateway 전환 검증은 아래 미완료 게이트에 그대로 남는다.
+
 ## 현재 범위와 상태
 
 이 문서는 `cloudflare.yml`의 실행 계약이다. 워크플로 추가는 실제 배포·검증·운영 승인 완료를 뜻하지 않는다. 현재 자동화는 **secret 없는 PR 검증과 수동 승인된 workers.dev 파일럿만** 제공한다. push 자동 배포, production job, gateway/DNS/route 변경은 없다. Cloudflare Git 자동 배포를 병행하지 않는다.
