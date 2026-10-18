@@ -1,0 +1,128 @@
+name: Cloudflare validation and pilot
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      smoke_url:
+        description: 'Pilot HTTPS origin only: https://WORKER.SUBDOMAIN.workers.dev'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Secret-free validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      smoke_url: ${{ steps.target.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.21.1'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            web/package-lock.json
+      - name: Validate pilot smoke origin
+        id: target
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          PILOT_SMOKE_URL: ${{ inputs.smoke_url }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs';
+          const raw = process.env.PILOT_SMOKE_URL;
+          const label = '[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?';
+          const allowed = new RegExp(`^https://${label}\\.${label}\\.workers\\.dev/?$`);
+          if (!raw || !allowed.test(raw)) {
+            throw new Error('Use an HTTPS WORKER.SUBDOMAIN.workers.dev origin, without credentials, port, path, query or fragment');
+          }
+          const url = new URL(raw);
+          appendFileSync(process.env.GITHUB_OUTPUT, `url=${url.origin}\n`);
+          NODE
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm --prefix web ci
+      - name: Rust tests (no WASM rebuild)
+        run: cargo test
+      - name: Deployment rules tests
+        run: npm run test:deploy
+      - name: Build Cloudflare assets
+        run: npm run build:cloudflare
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Local browser smoke
+        run: npm run test:browser
+      - name: Wrangler dry run (no credentials)
+        run: npm run cf:dry-run
+      - name: Preserve validated assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-assets-${{ github.sha }}
+          path: web/dist
+          if-no-files-found: error
+          retention-days: 14
+
+  pilot:
+    name: Approved workers.dev pilot only
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: cloudflare-pilot
+      url: ${{ needs.validate.outputs.smoke_url }}
+    concurrency:
+      group: cloudflare-pilot
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.21.1'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            web/package-lock.json
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm --prefix web ci
+      - name: Restore exactly the validated assets
+        uses: actions/download-artifact@v4
+        with:
+          name: cloudflare-assets-${{ github.sha }}
+          path: web/dist
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Deploy approved pilot
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run cf:deploy
+      - name: Live HTTP smoke
+        env:
+          PILOT_SMOKE_URL: ${{ needs.validate.outputs.smoke_url }}
+        run: npm run test:http -- "$PILOT_SMOKE_URL"
+      - name: Live browser smoke
+        env:
+          SMOKE_BASE_URL: ${{ needs.validate.outputs.smoke_url }}
+        run: npm run test:browser
+      - name: Record pilot result
+        if: always()
+        env:
+          PILOT_SMOKE_URL: ${{ needs.validate.outputs.smoke_url }}
+          PILOT_STATUS: ${{ job.status }}
+        run: |
+          printf '## Cloudflare pilot\n- Commit: `%s`\n- Origin: %s\n- Job result: %s\n- Manual/mobile Safari review and production approval: NOT completed by this workflow.\n' \
+            "$GITHUB_SHA" "$PILOT_SMOKE_URL" "$PILOT_STATUS" >> "$GITHUB_STEP_SUMMARY"

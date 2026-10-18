@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "md2hwpx",
+  "compatibility_date": "2026-10-18",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./web/dist",
+    "html_handling": "none",
+    "not_found_handling": "none"
+  }
+}

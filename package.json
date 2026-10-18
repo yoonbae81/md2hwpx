@@ -1,0 +1,15 @@
+{
+  "name": "md2hwpx-deploy",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test:deploy": "node --test tests/deploy.test.mjs",
+    "build:cloudflare": "npm --prefix web run build && node scripts/prepare-cloudflare.mjs",
+    "cf:dry-run": "wrangler deploy --dry-run",
+    "cf:deploy": "wrangler deploy",
+    "test:http": "node scripts/check-http.mjs",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": { "wrangler": "4.151.1", "@playwright/test": "1.56.1" }
+}
