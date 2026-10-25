@@ -32,8 +32,9 @@ pub enum Part {
     Table(String),
 }
 
-/// 파싱 중 집계되는 통계와 경고. 경고는 Report로 나가 종료 코드 1의 근거가
-/// 된다(예: 손상된 표 복구).
+/// 파싱 중 집계되는 통계와 경고. 경고는 변환을 계속할 수 있었던 사실의
+/// 근거로 Report에 그대로 나가고(예: 손상된 표 복구), 종료 코드에는
+/// 영향을 주지 않는다.
 #[derive(Default)]
 pub struct ParseStats {
     pub warnings: Vec<String>,

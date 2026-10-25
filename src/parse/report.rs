@@ -1,5 +1,5 @@
 //! CLI가 stdout에 JSON으로 출력하는 변환 보고서.
-//! md2hwpx의 규약과 같이 경고/오류의 존재가 종료 코드의 근거가 된다.
+//! 경고가 있어도 종료 코드는 0이며, 경고 상세는 이 Report로 노출된다.
 
 use serde::Serialize;
 

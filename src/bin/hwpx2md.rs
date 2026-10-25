@@ -36,17 +36,15 @@ fn main() -> ExitCode {
     match run() {
         Err(e) => {
             eprintln!("error: {e}");
-            ExitCode::from(2)
+            // 처리/I-O 실패는 1. 사용법/인자 오류(2)는 cli::parse_args가 담당.
+            ExitCode::from(1)
         }
         Ok(report) => {
             let json = serde_json::to_string_pretty(&report).expect("JSON serialization failed");
             println!("{json}");
-            // 종료 코드 규약: 경고 있음 1, 정상 0, 오류 2(위의 오류 분기).
-            if report.warnings.is_empty() {
-                ExitCode::SUCCESS
-            } else {
-                ExitCode::from(1)
-            }
+            // 경고는 stdout JSON Report에 그대로 남고 종료 코드에는 영향을
+            // 주지 않는다(0=성공, 1=처리 실패는 위의 오류 분기).
+            ExitCode::SUCCESS
         }
     }
 }

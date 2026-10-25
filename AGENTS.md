@@ -11,8 +11,9 @@ hwpx (compile & parse) — 마크다운 ⇄ HWPX 상호 변환 Rust 단일 프�
 ```sh
 cargo build --release   # target/release/md2hwpx 및 target/release/hwpx2md
 cargo test              # 워크스페이스 전체 단위 테스트
-./target/release/md2hwpx workspace/source.txt workspace/template.hwpx workspace/compiled.hwpx   # md2hwpx 수동 검증
-./target/release/hwpx2md workspace/sample.hwpx workspace/sample.md                              # hwpx2md 수동 검증
+mkdir -p workspace/manual-smoke # 검증 산물용 작업 디렉터리(gitignored, 필요 때 재생성)
+./target/release/md2hwpx web/public/example.md web/public/template.hwpx workspace/manual-smoke/example.hwpx # md2hwpx 수동 검증
+./target/release/hwpx2md workspace/manual-smoke/example.hwpx workspace/manual-smoke/example.md              # hwpx2md 수동 검증
 
 cd web && npm run dev   # 통합 개발 서버 http://localhost:8292/hwpx/compile 및 /hwpx/parse (포트 8292)
 cd web && npm run build # web/dist 정적 산출물 빌드
@@ -27,7 +28,7 @@ cd web && npm run build # web/dist 정적 산출물 빌드
 - 저장소 루트 `.cargo/config.toml`이 wasm32 타깃에 `+bulk-memory` 등 target-feature를 켠다(더 작은 LLVM 코드 생성,
   최신 브라우저 기본 지원 기능만). 임의로 지우면 wasm 용량이 다시 커진다.
 - Wasm 타겟에서는 `regex`가 regex-lite로 교체된다(루트 크레이트 `Cargo.toml`의 타겟별 의존성). regex-lite 서브셋(리터럴 한글, `(?i)` ASCII, `\d`/`\s`, named group)을 벗어나지 않도록 한다.
-- 저장소 루트의 `template.hwpx`, `source.txt` 및 수동 검증용 `.hwpx` 파일은 `workspace/` 아래에 두며, 이 디렉터리 전체가 `.gitignore`로 제외되어 있다. 픽스처 바이너리를 커밋하지 않는다.
+- 수동 검증용 산출물은 저장소 루트의 gitignored `workspace/` 아래(예: `workspace/manual-smoke/`)에 둔다. 디렉터리는 필요할 때 `mkdir -p`로 다시 만들면 된다. 픽스처 바이너리를 커밋하지 않는다.
 
 ## 파일별 책임
 
@@ -89,14 +90,15 @@ cd web && npm run build # web/dist 정적 산출물 빌드
 - 한국어 길이 상한(소제목 80자, 번호 소제목 본문 60자)은 문자 수(`chars().count()`)로 센다.
 - 후처리가 내보내는 토큰(`[[박스]]`, `[[붙임]]`, `- ` 불릿, `N. 제목`)은 `compile` 소스 파서가 다시 먹는 토큰과 정합해야 한다.
 - 스타일 값을 코드에 하드코딩하지 않는다. `compile`의 레이아웃은 `template.hwpx`의 prototype/메모 범위에서 온다.
-- 종료 코드 규약: 컴파일/변환 오류 2, 경고(validation errors 또는 손상 표 복구) 1, 정상 0. 오류 메시지는 한 줄 영어(`error: ...`)로 유지하고 파일 경로는 입력 원문 그대로 출력한다.
+- 종료 코드: 0=성공(warnings만 있어도 0이고 경고는 stdout JSON `Report`에 그대로 남는다), 1=처리/검증/I-O 오류(두 CLI 모두: 파일 I/O 실패·컴파일 실행 오류·`md2hwpx` validation errors), 2=사용법/인자 오류다. 오류 메시지는 한 줄 영어(`error: ...`)로 유지하고 파일 경로는 입력 원문 그대로 출력한다.
 
 ## 검증 습관
 
 - 규칙 회귀는 `cargo test`의 워크스페이스 단위 테스트가 지킨다.
 - 수동 왕복 스모크:
-  `./target/release/md2hwpx web/public/example.md web/public/template.hwpx /tmp/rt.hwpx`
-  `./target/release/hwpx2md /tmp/rt.hwpx /tmp/rt.md`
-  `./target/release/md2hwpx /tmp/rt.md web/public/template.hwpx /tmp/rt2.hwpx`
+  `mkdir -p workspace/manual-smoke`
+  `./target/release/md2hwpx web/public/example.md web/public/template.hwpx workspace/manual-smoke/rt.hwpx`
+  `./target/release/hwpx2md workspace/manual-smoke/rt.hwpx workspace/manual-smoke/rt.md`
+  `./target/release/md2hwpx workspace/manual-smoke/rt.md web/public/template.hwpx workspace/manual-smoke/rt2.hwpx`
   로 블록 종류 손실이나 오류가 없는지 확인한다.
 - `workspace/` 산물은 커밋하지 않는다.

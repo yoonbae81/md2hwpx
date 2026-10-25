@@ -53,7 +53,8 @@ fn main() -> ExitCode {
     match run() {
         Err(e) => {
             eprintln!("error: {e}");
-            ExitCode::from(2)
+            // 처리/I-O 실패는 1. 사용법/인자 오류(2)는 cli::parse_args가 담당.
+            ExitCode::from(1)
         }
         Ok(report) => {
             let json = serde_json::to_string_pretty(&report).expect("JSON serialization failed");

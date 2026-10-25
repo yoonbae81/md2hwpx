@@ -19,6 +19,7 @@ workspace/
 # opencode 등 로컬 에이전트 세션 상태
 .sisyphus/
 .omo/
+.serena/
 
 # codegraph 로컬 인덱스
 .codegraph
