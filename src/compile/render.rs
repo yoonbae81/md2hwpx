@@ -591,7 +591,8 @@ fn render_table(paragraph: &NodeRef, encoded_rows: &str) -> Result<()> {
         return err("table prototype has no rows.");
     }
     let header_template = deep_clone(&template_rows[0]);
-    let body_template = deep_clone(template_rows.get(1).unwrap_or(&template_rows[0]));
+    let first_data_template = deep_clone(template_rows.get(1).unwrap_or(&template_rows[0]));
+    let last_data_template = deep_clone(template_rows.last().unwrap());
     let template_cells = find_children(&template_rows[0], HP, "tc");
     let template_widths: Vec<i64> = template_cells
         .iter()
@@ -611,8 +612,10 @@ fn render_table(paragraph: &NodeRef, encoded_rows: &str) -> Result<()> {
     for (row_index, values) in rows.iter().enumerate() {
         let row = if row_index == 0 {
             deep_clone(&header_template)
+        } else if row_index == rows.len() - 1 {
+            deep_clone(&last_data_template)
         } else {
-            deep_clone(&body_template)
+            deep_clone(&first_data_template)
         };
         let mut cells = find_children(&row, HP, "tc");
         while cells.len() < column_count {
@@ -725,6 +728,75 @@ mod tests {
             ("body".to_string(), "41".to_string()),
             ("bullet_text".to_string(), "∙".to_string()),
         ])
+    }
+
+    fn table_fixture() -> NodeRef {
+        // 표 원형과 같은 모양: tr 3개(헤더 11 / 중간 777 / 마지막(아래 SOLID) 999),
+        // 각 tr은 셀 2개. tc 자식 순서는 template.hwpx의 실제 순서를 따른다.
+        let tr = |fill: u32, row: u32| {
+            let cell = |col: u32| {
+                format!(
+                    concat!(
+                        "<hp:tc name=\"\" header=\"0\" hasMargin=\"0\" protect=\"0\" editable=\"0\" dirty=\"0\" borderFillIDRef=\"{fill}\">",
+                        "<hp:subList id=\"\" textDirection=\"HORIZONTAL\" lineWrap=\"BREAK\" vertAlign=\"CENTER\" linkListIDRef=\"0\" linkListNextIDRef=\"0\" textWidth=\"0\" textHeight=\"0\" hasTextRef=\"0\" hasNumRef=\"0\">",
+                        "<hp:p id=\"2147483648\" paraPrIDRef=\"45\" styleIDRef=\"0\" pageBreak=\"0\" columnBreak=\"0\" merged=\"0\">",
+                        "<hp:run charPrIDRef=\"51\"><hp:t>샘플</hp:t></hp:run></hp:p></hp:subList>",
+                        "<hp:cellAddr colAddr=\"{col}\" rowAddr=\"{row}\"/>",
+                        "<hp:cellSpan colSpan=\"1\" rowSpan=\"1\"/>",
+                        "<hp:cellSz width=\"9602\" height=\"2431\"/>",
+                        "<hp:cellMargin left=\"510\" right=\"510\" top=\"141\" bottom=\"141\"/></hp:tc>"
+                    ),
+                    fill = fill,
+                    col = col,
+                    row = row
+                )
+            };
+            format!("<hp:tr>{}{}</hp:tr>", cell(0), cell(1))
+        };
+        let xml = format!(
+            "<hp:p xmlns:hp=\"http://www.hancom.co.kr/hwpml/2011/paragraph\"><hp:run charPrIDRef=\"1\"><hp:tbl id=\"1\" rowCnt=\"3\" colCnt=\"2\" borderFillIDRef=\"4\">{}{}{}</hp:tbl></hp:run></hp:p>",
+            tr(11, 0),
+            tr(777, 1),
+            tr(999, 2)
+        );
+        parse(xml.as_bytes()).unwrap()
+    }
+
+    fn table_row_border_fills(paragraph: &NodeRef) -> Vec<u32> {
+        let table = find_desc(paragraph, HP, "tbl").unwrap();
+        find_children(&table, HP, "tr")
+            .iter()
+            .map(|tr| {
+                find_children(tr, HP, "tc")[0]
+                    .borrow()
+                    .get_attr("borderFillIDRef")
+                    .unwrap()
+                    .parse()
+                    .unwrap()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn render_table_last_data_row_uses_bottom_prototype() {
+        let paragraph = table_fixture();
+        render_table(&paragraph, r#"[["제목1","제목2"],["가","나"],["다","라"]]"#).unwrap();
+        assert_eq!(
+            table_row_border_fills(&paragraph),
+            vec![11, 777, 999],
+            "마지막 데이터 행은 아래 SOLID 테두리 원형(999)을 써야 한다"
+        );
+    }
+
+    #[test]
+    fn render_table_single_data_row_uses_bottom_prototype() {
+        let paragraph = table_fixture();
+        render_table(&paragraph, r#"[["제목1","제목2"],["가","나"]]"#).unwrap();
+        assert_eq!(
+            table_row_border_fills(&paragraph),
+            vec![11, 999],
+            "데이터 행이 하나면 그 행이 곧 마지막 행이므로 아래 테두리 원형(999)을 써야 한다"
+        );
     }
 
     #[test]

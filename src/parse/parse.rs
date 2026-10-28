@@ -20,6 +20,7 @@
 //! - 문서 관습 복원(표→헤딩, 불릿 계층, 박스 등)은 이 모듈이 하지 않고
 //!   공용 후처리(`postprocess::postprocess_markdown`)에 위임한다
 
+use crate::parse::hwpx::SuperscriptCharPrs;
 use crate::parse::postprocess::heading::{is_subtitle_text, title_bar_heading_from_cells};
 use crate::shared::xmltree::{find_child, find_children, HP, NodeRef};
 
@@ -40,6 +41,9 @@ pub struct ParseStats {
     pub warnings: Vec<String>,
     pub pipe_tables: usize,
     pub html_tables: usize,
+    /// header.xml에서 읽은 윗첨자 charPr ID. 기본값(빈 목록)은 윗첨자
+    /// run이 없다는 뜻이며, `^` 복원을 하지 않는다.
+    pub superscript: SuperscriptCharPrs,
 }
 
 /// `hp:t` 하나를 파트로 분해한다.
@@ -321,9 +325,25 @@ fn table_to_pipe_table(tbl: &NodeRef, stats: &mut ParseStats) -> Option<String> 
 pub fn paragraph_parts(p: &NodeRef, stats: &mut ParseStats) -> Vec<Part> {
     let mut parts: Vec<Part> = Vec::new();
     let mut memo_id: Option<String> = None;
+    // 연속한 평문 윗첨자 run 중 첫 run 앞에만 `^`를 복원한다(붉은 별표
+    // 변형은 제외). 윗첨자 run이 텍스트를 실제로 담고 있을 때만 낸다.
+    let mut previous_was_sup = false;
     let children = p.borrow().children.clone();
     for child in &children {
+        let is_sup_run = child.borrow().is(HP, "run")
+            && stats
+                .superscript
+                .is_plain_sup(child.borrow().get_attr("charPrIDRef").as_deref())
+            && child
+                .borrow()
+                .children
+                .iter()
+                .any(|c| c.borrow().is(HP, "t") && !c.borrow().text_or_empty().is_empty());
+        if is_sup_run && !previous_was_sup {
+            parts.push(Part::Text("^".to_string()));
+        }
         walk_parts(child, &mut parts, &mut memo_id, stats);
+        previous_was_sup = is_sup_run;
     }
     parts
 }
@@ -413,9 +433,15 @@ pub fn paragraph_to_markdown(p: &NodeRef, stats: &mut ParseStats) -> String {
 /// 모든 section을 번호 순서대로 문단 단위 마크다운 블록으로 바꾼다.
 /// 블록 사이는 lib의 파이프라인이 빈 줄 두 개로 연결하고, 공용 후처리가
 /// 이어서 문서 관습을 복원한다.
-pub fn sections_to_blocks(section_roots: &[NodeRef]) -> (Vec<String>, ParseStats) {
+pub fn sections_to_blocks(
+    section_roots: &[NodeRef],
+    superscript: &SuperscriptCharPrs,
+) -> (Vec<String>, ParseStats) {
     let mut blocks: Vec<String> = Vec::new();
-    let mut stats = ParseStats::default();
+    let mut stats = ParseStats {
+        superscript: superscript.clone(),
+        ..ParseStats::default()
+    };
     for root in section_roots {
         for p in collect_paragraphs(root) {
             let text = paragraph_to_markdown(&p, &mut stats);
@@ -742,7 +768,7 @@ mod tests {
             "<hp:p><hp:run><hp:t>첫 문단</hp:t></hp:run></hp:p><hp:p></hp:p>",
         );
         let b = root_of("<hp:p><hp:run><hp:t>둘 문단</hp:t></hp:run></hp:p>");
-        let (blocks, stats) = sections_to_blocks(&[a, b]);
+        let (blocks, stats) = sections_to_blocks(&[a, b], &Default::default());
         assert_eq!(blocks, vec!["첫 문단".to_string(), "둘 문단".to_string()]);
         assert!(stats.warnings.is_empty());
     }

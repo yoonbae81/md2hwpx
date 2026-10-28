@@ -7,13 +7,62 @@
 //! 문서 구조는 스타일/charPr 메타데이터가 아니라 텍스트 내용 패턴으로
 //! 복원한다(v1 의도 결정사항이며 누락이 아니다).
 
+use std::collections::HashSet;
 use std::io::{Cursor, Read};
 
 use crate::shared::zip_read::{check_package_size, reject_dtd, section_files};
 use zip::read::ZipArchive;
 
 use crate::shared::error::{AppError, Result};
-use crate::shared::xmltree::{parse, NodeRef};
+use crate::shared::xmltree::{find_child, find_children, find_desc, parse, HH, NodeRef};
+
+/// header.xml에서 읽은 윗첨자 charPr ID 목록. `sup`은 hh:supscript를 가진
+/// ID, `red`은 그중 textColor=#FF0000(붙은 별표 변형)인 ID다.
+#[derive(Default, Clone, Debug)]
+pub struct SuperscriptCharPrs {
+    sup: HashSet<String>,
+    red: HashSet<String>,
+}
+
+impl SuperscriptCharPrs {
+    /// 붙은 별표(빨간 윗첨자)가 아닌 평문 윗첨자 run인지.
+    pub fn is_plain_sup(&self, char_pr_id: Option<&str>) -> bool {
+        match char_pr_id {
+            Some(id) => self.sup.contains(id) && !self.red.contains(id),
+            None => false,
+        }
+    }
+}
+
+/// header.xml의 charPr을 훑어 윗첨자(및 빨간 변형) ID를 모은다.
+pub fn read_superscript_charprs(bytes: &[u8], label: &str) -> Result<SuperscriptCharPrs> {
+    let mut package = ZipArchive::new(Cursor::new(bytes))
+        .map_err(|e| AppError(format!("{label}: {e}")))?;
+    let Ok(mut f) = package.by_name("Contents/header.xml") else {
+        return Ok(SuperscriptCharPrs::default());
+    };
+    let mut data = Vec::new();
+    f.read_to_end(&mut data)?;
+    reject_dtd(&data, "Contents/header.xml")?;
+    let root = parse(&data)
+        .map_err(|e| AppError(format!("malformed XML in Contents/header.xml: {e}")))?;
+    let mut out = SuperscriptCharPrs::default();
+    if let Some(props) = find_desc(&root, HH, "charProperties") {
+        for cp in find_children(&props, HH, "charPr") {
+            if find_child(&cp, HH, "supscript").is_none() {
+                continue;
+            }
+            let b = cp.borrow();
+            if let Some(id) = b.get_attr("id") {
+                out.sup.insert(id.clone());
+                if b.get_attr("textColor").as_deref() == Some("#FF0000") {
+                    out.red.insert(id);
+                }
+            }
+        }
+    }
+    Ok(out)
+}
 
 /// zip과 엔티티 안전 검사를 거쳐 `Contents/section*.xml`을 번호 순서대로
 /// 파싱해 트리를 모은다. `label`은 오류 메시지에 쓰이는 입력 출처이다.

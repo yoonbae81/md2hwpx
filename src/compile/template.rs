@@ -261,6 +261,26 @@ pub fn read_template_catalog(root: &NodeRef) -> Result<Catalog> {
             upsert(&mut catalog.prototypes, "box", prototype);
             continue;
         }
+        // 이름 있는 [[table:<n>]]는 숫자 헤더 셀 수를 가진 별도 표 원형으로
+        // 등록한다. component 분기보다 앞에 둔다. 이름 없는 [[table]]의
+        // setdefault 동작은 그대로 유지된다.
+        if category == "table" {
+            if let Some(name) = entry.name.as_deref() {
+                if !name.is_empty() && name.chars().all(|c| c.is_ascii_digit()) {
+                    let start = entry
+                        .start_paragraph
+                        .clone()
+                        .expect("table memo에는 시작 문단이 있습니다");
+                    let prototype = prototype_with_table(entry, start);
+                    upsert(
+                        &mut catalog.prototypes,
+                        &format!("table-{name}"),
+                        prototype,
+                    );
+                    continue;
+                }
+            }
+        }
         // Component memo는 문단 경계를 넘을 수 있다. 범위의 마지막 run이
         // 실제 선택된 구성요소(예: depth1:bullet)이다. 표 셀 안의 메모는
         // document_runs에 셀 run이 나오지 않으므로 fieldBegin을 감싸는
@@ -639,6 +659,27 @@ fn collect_component_styles(
     Ok(styles)
 }
 
+/// 표 블록의 값 JSON rows[0](헤더) 셀 수가 n이고 prototypes에 "table-<n>"
+/// 원형이 있으면 그것을, 없으면 기본 "table" 원형을 돌려준다.
+fn select_table_prototype<'a>(
+    base: &'a NodeRef,
+    prototypes: &'a [(String, NodeRef)],
+    value: &str,
+) -> &'a NodeRef {
+    let Ok(rows) = serde_json::from_str::<Vec<Vec<String>>>(value) else {
+        return base;
+    };
+    let Some(header) = rows.first() else {
+        return base;
+    };
+    let key = format!("table-{}", header.len());
+    prototypes
+        .iter()
+        .find(|(k, _)| *k == key)
+        .map(|(_, p)| p)
+        .unwrap_or(base)
+}
+
 fn render_blocks(
     root: &NodeRef,
     prototypes: &[(String, NodeRef)],
@@ -658,6 +699,11 @@ fn render_blocks(
             .find(|(k, _)| k == kind)
             .map(|(_, p)| p)
             .expect("blocks의 kind는 prototypes에 있음이 확인됨");
+        let prototype = if kind == "table" {
+            select_table_prototype(prototype, prototypes, value)
+        } else {
+            prototype
+        };
         let paragraph = deep_clone(prototype);
         render_block(kind, &paragraph, value, styles)?;
         append_child(root, paragraph);
@@ -721,4 +767,66 @@ pub fn build_section(
     let styles = collect_component_styles(&catalog, &blocks)?;
     render_blocks(&root, &prototypes, &prefixes, &blocks, &styles)?;
     Ok(root)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::shared::xmltree::parse;
+
+    /// 실제 템플릿의 MEMO 구조를 축소 재현한 픽스처: [[table:2]] 메모
+    /// (표식 문단 p1) + 2열 tbl 문단(p2, fieldEnd 포함).
+    fn table2_fixture() -> NodeRef {
+        let cell = |text: &str| {
+            format!(
+                "<hp:tc name=\"\" header=\"0\" hasMargin=\"0\" protect=\"0\" editable=\"0\" dirty=\"0\" borderFillIDRef=\"4\">\
+<hp:subList id=\"\" textDirection=\"HORIZONTAL\" lineWrap=\"BREAK\" vertAlign=\"TOP\" linkListIDRef=\"0\" linkListNextIDRef=\"0\" textWidth=\"0\" textHeight=\"0\" hasTextRef=\"0\" hasNumRef=\"0\">\
+<hp:p id=\"2147483648\" paraPrIDRef=\"5\" styleIDRef=\"0\" pageBreak=\"0\" columnBreak=\"0\" merged=\"0\">\
+<hp:run charPrIDRef=\"1\"><hp:t>{text}</hp:t></hp:run>\
+</hp:p></hp:subList>\
+<hp:cellAddr colAddr=\"0\" rowAddr=\"0\" /><hp:cellSpan colSpan=\"1\" rowSpan=\"1\" />\
+<hp:cellSz width=\"6818\" height=\"2431\" /><hp:cellMargin left=\"510\" right=\"510\" top=\"141\" bottom=\"141\" /></hp:tc>"
+            )
+        };
+        let xml = format!(
+            "<hp:hs xmlns:hp=\"http://www.hancom.co.kr/hwpml/2011/paragraph\"><hp:p id=\"0\" paraPrIDRef=\"5\" styleIDRef=\"16\">\
+<hp:run charPrIDRef=\"4\"><hp:ctrl><hp:fieldBegin id=\"1001\" type=\"MEMO\" name=\"\" editable=\"1\" dirty=\"1\" zorder=\"30\" fieldid=\"2001\">\
+<hp:parameters cnt=\"1\" name=\"\"><hp:integerParam name=\"Prop\">0</hp:integerParam></hp:parameters>\
+<hp:subList id=\"\" textDirection=\"HORIZONTAL\" lineWrap=\"BREAK\" vertAlign=\"TOP\" linkListIDRef=\"0\" linkListNextIDRef=\"0\" textWidth=\"0\" textHeight=\"0\" hasTextRef=\"0\" hasNumRef=\"0\">\
+<hp:p id=\"0\" paraPrIDRef=\"5\" styleIDRef=\"16\"><hp:run charPrIDRef=\"4\"><hp:t>[[table:2]]</hp:t></hp:run></hp:p>\
+</hp:subList></hp:fieldBegin></hp:ctrl><hp:t/></hp:run></hp:p>\
+<hp:p id=\"1\" paraPrIDRef=\"5\" styleIDRef=\"16\">\
+<hp:run charPrIDRef=\"49\"><hp:tbl id=\"1000\" rowCnt=\"1\" colCnt=\"2\" borderFillIDRef=\"4\">\
+<hp:tr>{c0}{c1}</hp:tr>\
+</hp:tbl><hp:ctrl><hp:fieldEnd beginIDRef=\"1001\" fieldid=\"2001\"/></hp:ctrl></hp:run></hp:p></hp:hs>",
+            c0 = cell("항목"),
+            c1 = cell("수치")
+        );
+        parse(xml.as_bytes()).unwrap()
+    }
+
+    #[test]
+    fn named_table_memo_registers_table_variant_prototype() {
+        let root = table2_fixture();
+        let catalog = read_template_catalog(&root).unwrap();
+        let entry = catalog
+            .prototypes
+            .iter()
+            .find(|(k, _)| k == "table-2")
+            .expect("table-2 prototype이 등록되어야 한다");
+        let paragraph = &entry.1;
+        // prototype 문단은 tbl 문단(p2)이어야 한다.
+        assert!(
+            find_desc(paragraph, HP, "tbl").is_some(),
+            "table-2 prototype은 tbl 문단이어야 한다"
+        );
+        assert!(
+            catalog
+                .prototypes
+                .iter()
+                .all(|(k, _)| k != "table"),
+            "이름 없는 [[table]] 메모가 없으면 table 키가 없어야 한다: {:?}",
+            catalog.prototypes.iter().map(|(k, _)| k).collect::<Vec<_>>()
+        );
+    }
 }

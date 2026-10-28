@@ -452,6 +452,73 @@ impl AttachedParenthesis {
     }
 }
 
+/// 각 기본 스타일을 유지하면서 윗첨자만 추가한 charPr ID를 만든다(빨간색
+/// 변형이 아닌 평문 윗첨자).
+fn superscript_char_pr_ids(
+    header_root: &NodeRef,
+    base_ids: &[String],
+) -> Result<HashMap<String, String>> {
+    derived_char_pr_ids(header_root, base_ids, |variant| {
+        if find_child(variant, HH, "supscript").is_none() {
+            append_child(variant, new_element("hh", "supscript", HH));
+        }
+    })
+}
+
+/// `^` 윗첨자 표식 규칙. `^` 바로 뒤가 공백/탭/끝이면 리터럴 `^`로 남고,
+/// 아니면 `^`를 떼고 다음 공백/탭/끝까지를 윗첨자로 배정한다. 윗첨자 구간
+/// 안의 `^`(다음이 공백이 아닌)는 구간에 흡수된다.
+struct Superscript;
+
+impl RunRestyler for Superscript {
+    fn split_node(&self, text: &str, _preceding: Option<char>) -> Vec<(String, bool)> {
+        let bytes = text.as_bytes();
+        let mut spans: Vec<(usize, usize)> = Vec::new();
+        let mut i = 0usize;
+        while i < bytes.len() {
+            if bytes[i] != b'^' {
+                i += 1;
+                continue;
+            }
+            match text[i + 1..].chars().next() {
+                // 다음 문자가 없거나 공백/탭이면 리터럴 `^`다.
+                None | Some(' ') | Some('\t') => i += 1,
+                Some(_) => {
+                    let start = i + 1;
+                    let mut end = text.len();
+                    for (j, c) in text[start..].char_indices() {
+                        if c == ' ' || c == '\t' {
+                            end = start + j;
+                            break;
+                        }
+                    }
+                    // 구간은 `^` 바이트부터 잡아 평문 조각이 표식을 가져가지
+                    // 않게 하고, 이후 윗첨자 조각에서 표식 한 글자를 떼어 낸다.
+                    spans.push((i, end));
+                    i = end;
+                }
+            }
+        }
+        // 구간은 `^` 바이트에서 시작하므로, 윗첨자 조각에서 표식 한 글자를
+        // 떼어 낸다(구간 앞 평문은 `^` 앞에서 끊긴다).
+        let mut pieces = spans_to_pieces(text, &spans);
+        for (part, derived) in &mut pieces {
+            if *derived && part.starts_with('^') {
+                part.remove(0);
+            }
+        }
+        pieces
+    }
+
+    fn derive_ids(
+        &self,
+        header_root: &NodeRef,
+        base_ids: &[String],
+    ) -> Result<HashMap<String, String>> {
+        superscript_char_pr_ids(header_root, base_ids)
+    }
+}
+
 /// 글자 뒤에 붙어 나오는 `*`(앞이 공백이 아닌 별표)를 윗첨자 빨간색으로
 /// 배정한다. red.hwpx 참조 스타일: textColor=#FF0000 + hh:supscript.
 struct AttachedAsterisk;
@@ -515,6 +582,13 @@ pub fn apply_parenthesis_size(section_root: &NodeRef, header_root: &NodeRef) -> 
 /// 후처리가 run을 재구성하므로 반드시 그 뒤에 실행해야 한다.
 pub fn apply_attached_asterisk(section_root: &NodeRef, header_root: &NodeRef) -> Result<bool> {
     apply_run_restyler(&AttachedAsterisk, section_root, header_root)
+}
+
+/// `^` 윗첨자 표식을 제거하고 대응 윗첨자 charPr 스타일을 배정한다.
+/// 굵게/괄호 후처리가 run을 재구성하므로 반드시 그 뒤, 붙은 별표 앞에
+/// 실행해야 한다.
+pub fn apply_superscript(section_root: &NodeRef, header_root: &NodeRef) -> Result<bool> {
+    apply_run_restyler(&Superscript, section_root, header_root)
 }
 
 #[cfg(test)]
@@ -720,6 +794,67 @@ mod tests {
         for r in find_all_desc(&section, HP, "run") {
             assert!(r.borrow().get_attr("charPrIDRef").is_none());
         }
+    }
+
+    #[test]
+    fn superscript_split_basic() {
+        assert_eq!(
+            Superscript.split_node("안녕^세계", None),
+            vec![
+                ("안녕".to_string(), false),
+                ("세계".to_string(), true)
+            ]
+        );
+    }
+
+    #[test]
+    fn superscript_literal_caret() {
+        // `^` 다음이 공백이면 리터럴 `^`로 평문에 남는다.
+        assert_eq!(
+            Superscript.split_node("안녕^ 세계", None),
+            vec![("안녕^ 세계".to_string(), false)]
+        );
+    }
+
+    #[test]
+    fn superscript_multiple() {
+        // 윗첨자 구간 안의 `^`(다음이 공백이 아님)는 구간에 흡수된다.
+        assert_eq!(
+            Superscript.split_node("이^가^될", None),
+            vec![
+                ("이".to_string(), false),
+                ("가^될".to_string(), true)
+            ]
+        );
+    }
+
+    #[test]
+    fn superscript_run_has_supscript_char_pr() {
+        let section = parse(
+            r##"<hp:sec xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph">
+<hp:p><hp:run charPrIDRef="7"><hp:t>이것은^윗첨자 텍스트입니다.</hp:t></hp:run></hp:p></hp:sec>"##
+                .as_bytes(),
+        )
+        .unwrap();
+        let header = parse(
+            r##"<hh:hh xmlns:hh="http://www.hancom.co.kr/hwpml/2011/head">
+<hh:charProperties itemCnt="1"><hh:charPr id="7" height="1000" textColor="#000000"/></hh:charProperties></hh:hh>"##
+                .as_bytes(),
+        )
+        .unwrap();
+        assert!(apply_superscript(&section, &header).unwrap());
+        assert_eq!(run_texts(&section), vec!["이것은", "윗첨자", " 텍스트입니다."]);
+        let props = find_desc(&header, HH, "charProperties").unwrap();
+        let prs = find_children(&props, HH, "charPr");
+        assert_eq!(prs.len(), 2);
+        assert!(find_child(&prs[1], HH, "supscript").is_some());
+        // 평문 윗첨자는 빨간색 변형이 아니다.
+        assert_ne!(prs[1].borrow().get_attr("textColor").as_deref(), Some("#FF0000"));
+        let sup_run = find_all_desc(&section, HP, "run")
+            .into_iter()
+            .find(|r| run_text_of(r) == "윗첨자")
+            .unwrap();
+        assert_eq!(sup_run.borrow().get_attr("charPrIDRef").as_deref(), Some("8"));
     }
 
     #[test]

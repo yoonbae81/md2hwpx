@@ -26,7 +26,8 @@ pub fn hwpx_to_markdown_bytes(bytes: &[u8], label: &str) -> Result<(String, repo
     if section_roots.is_empty() {
         return Err(AppError(format!("{label}: no HWPX section files found")));
     }
-    let (blocks, stats) = parse::sections_to_blocks(&section_roots);
+    let superscripts = hwpx::read_superscript_charprs(bytes, label)?;
+    let (blocks, stats) = parse::sections_to_blocks(&section_roots, &superscripts);
     let raw = blocks.join("\n\n");
     let markdown = postprocess::postprocess_markdown(&raw);
     Ok((markdown, report::build(section_roots.len(), blocks.len(), stats)))
