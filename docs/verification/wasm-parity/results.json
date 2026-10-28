@@ -1,0 +1,54 @@
+[
+  {
+    "path": "workspace/wasm-parity/wasm-old.hwpx",
+    "passed": false,
+    "superscript": [],
+    "remaining_carets": [
+      " 대책 수립 병행 필요 ^[잠정]",
+      " 절감이 예상됨 ^[잠정]"
+    ],
+    "last_row_bottoms": [
+      {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#808080"
+      },
+      {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#808080"
+      },
+      {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#808080"
+      }
+    ]
+  },
+  {
+    "path": "workspace/wasm-parity/live-browser.hwpx",
+    "passed": true,
+    "superscript": [
+      "[잠정]",
+      "[잠정]"
+    ],
+    "remaining_carets": [],
+    "last_row_bottoms": [
+      {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#808080"
+      },
+      {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#808080"
+      },
+      {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#808080"
+      }
+    ]
+  }
+]
