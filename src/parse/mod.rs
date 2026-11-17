@@ -73,7 +73,7 @@ mod tests {
         // 공백·문단 끝 뒤에는 `^` 하나면 왕복 손실이 없고, 붉은 별표 변형은
         // 윗첨자 표식 대상이 아니다.
         let header = r##"<?xml version="1.0" encoding="utf-8"?><hh:header xmlns:hh="http://www.hancom.co.kr/hwpml/2011/head"><hh:charProperties itemCnt="2"><hh:charPr id="7"><hh:supscript/></hh:charPr><hh:charPr id="8" textColor="#FF0000"><hh:supscript/></hh:charPr></hh:charProperties></hh:header>"##;
-        let section = r#"<?xml version="1.0" encoding="utf-8"?><hp:hs xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph"><hp:p><hp:run><hp:t>앞</hp:t></hp:run><hp:run charPrIDRef="7"><hp:t>둘</hp:t></hp:run><hp:run><hp:t>만</hp:t></hp:run></hp:p><hp:p><hp:run><hp:t>앞</hp:t></hp:run><hp:run charPrIDRef="7"><hp:t>둘</hp:t></hp:run><hp:run><hp:t> 뒤</hp:t></hp:run></hp:p><hp:p><hp:run charPrIDRef="7"><hp:t>끝</hp:t></hp:run></hp:p><hp:p><hp:run><hp:t>빨강</hp:t></hp:run><hp:run charPrIDRef="8"><hp:t>*</hp:t></hp:run><hp:run><hp:t>다음</hp:t></hp:run></hp:p></hp:hs>"#;
+        let section = r#"<?xml version="1.0" encoding="utf-8"?><hp:hs xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph"><hp:p><hp:run><hp:t>앞</hp:t></hp:run><hp:run charPrIDRef="7"><hp:t>둘</hp:t></hp:run><hp:run><hp:t>만</hp:t></hp:run></hp:p><hp:p><hp:run><hp:t>앞</hp:t></hp:run><hp:run charPrIDRef="7"><hp:t>둘</hp:t></hp:run><hp:run><hp:t> 뒤</hp:t></hp:run></hp:p><hp:p><hp:run charPrIDRef="7"><hp:t>끝</hp:t></hp:run></hp:p><hp:p><hp:run><hp:t>빨강</hp:t></hp:run><hp:run charPrIDRef="8"><hp:t>*</hp:t></hp:run><hp:run><hp:t>다음</hp:t></hp:run></hp:p><hp:p><hp:run><hp:t>결과는 </hp:t></hp:run><hp:run charPrIDRef="7"><hp:t>②</hp:t></hp:run><hp:run><hp:t>. 그래서</hp:t></hp:run></hp:p></hp:hs>"#;
         let bytes = fixture_hwpx_with_header(&[("Contents/section0.xml", section)], header);
         let (markdown, _) = hwpx_to_markdown_bytes(&bytes, "test.hwpx").unwrap();
         assert!(markdown.contains("앞^둘^만"), "{}", markdown);
@@ -82,6 +82,9 @@ mod tests {
         assert!(!markdown.contains("^끝^"), "{}", markdown);
         assert!(markdown.contains("빨강*다음"), "{}", markdown);
         assert!(!markdown.contains("빨강^*다음"), "{}", markdown);
+        // 마침표는 종결 문자라 닫는 표식 없이도 왕복이 무손실이다.
+        assert!(markdown.contains("결과는 ^②. 그래서"), "{}", markdown);
+        assert!(!markdown.contains("^②^. 그래서"), "{}", markdown);
     }
 
     #[test]

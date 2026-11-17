@@ -22,6 +22,7 @@
 
 use crate::parse::hwpx::SuperscriptCharPrs;
 use crate::parse::postprocess::heading::{is_subtitle_text, title_bar_heading_from_cells};
+use crate::shared::dialect::is_superscript_terminator;
 use crate::shared::xmltree::{find_child, find_children, HP, NodeRef};
 
 /// 문단을 구성하는 파트. Python의 (kind, content) 튜플 대신 타입으로 구분한다.
@@ -327,9 +328,10 @@ pub fn paragraph_parts(p: &NodeRef, stats: &mut ParseStats) -> Vec<Part> {
     let mut memo_id: Option<String> = None;
     // 연속한 평문 윗첨자 run 중 첫 run 앞에만 `^`를 복원한다(붉은 별표
     // 변형은 제외). 윗첨자 run이 텍스트를 실제로 담고 있을 때만 낸다.
-    // 구간 뒤에 공백 없이 다른 글자가 바로 붙으면 닫는 `^`도 복원한다 —
-    // 닫는 표식이 없으면 다시 컴파일할 때 뒤 글자까지 윗첨자로 합쳐진다.
-    // 공백/줄바꿈/문단 끝이면 닫는 표식 없이 `^`만으로 충분하다.
+    // 구간 뒤에 종결 문자가 아닌 글자가 공백 없이 바로 붙으면 닫는 `^`도
+    // 복원한다 — 표식이 없으면 다시 컴파일할 때 뒤 글자까지 윗첨자로
+    // 합쳐진다. 공백·마침표·쉼표는 컴파일 쪽에서도 구간을 끊는 종결 문자라
+    // 닫는 표식 없이 `^` 하나로 왕복 손실이 없다.
     let mut previous_was_sup = false;
     let children = p.borrow().children.clone();
     for child in &children {
@@ -345,7 +347,11 @@ pub fn paragraph_parts(p: &NodeRef, stats: &mut ParseStats) -> Vec<Part> {
         if is_sup_run && !previous_was_sup {
             parts.push(Part::Text("^".to_string()));
         }
-        if previous_was_sup && !is_sup_run && run_starts_with_visible_char(child) {
+        if previous_was_sup
+            && !is_sup_run
+            && run_starts_with_visible_char(child)
+            && run_first_char(child).is_some_and(|c| !is_superscript_terminator(c))
+        {
             parts.push(Part::Text("^".to_string()));
         }
         walk_parts(child, &mut parts, &mut memo_id, stats);
@@ -357,15 +363,20 @@ pub fn paragraph_parts(p: &NodeRef, stats: &mut ParseStats) -> Vec<Part> {
 /// run이 텍스트를 담고 있고 그 첫 글자가 공백/탭이 아닐 때 참이다. 닫는
 /// 윗첨자 표식 복원 판단에 쓰인다.
 fn run_starts_with_visible_char(node: &NodeRef) -> bool {
+    run_first_char(node).is_some_and(|c| !c.is_whitespace())
+}
+
+/// run의 첫 텍스트 글자. run이 아니면 없는 것으로 본다 — 표 등 다른 요소의
+/// 텍스트가 닫는 표식 판단에 새지 않게 한다.
+fn run_first_char(node: &NodeRef) -> Option<char> {
     if !node.borrow().is(HP, "run") {
-        return false;
+        return None;
     }
     node.borrow()
         .children
         .iter()
         .find(|c| c.borrow().is(HP, "t") && !c.borrow().text_or_empty().is_empty())
         .and_then(|c| c.borrow().text_or_empty().chars().next())
-        .is_some_and(|c| !c.is_whitespace())
 }
 
 fn walk_parts(

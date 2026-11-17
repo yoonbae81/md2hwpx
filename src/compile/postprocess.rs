@@ -5,6 +5,7 @@ use std::rc::Rc;
 use crate::shared::error::{AppError, Result};
 use crate::compile::patterns::{MARKDOWN_BOLD_RE, PARENTHESIS_RE};
 use crate::compile::render::replace_run_text;
+use crate::shared::dialect::is_superscript_terminator;
 use crate::shared::xmltree::{
     append_child, deep_clone, element_index, find_child, find_children, find_desc,
     insert_element, iter_elements, remove_child, serialize_signature, set_attr, Element, HH, HP,
@@ -465,10 +466,11 @@ fn superscript_char_pr_ids(
     })
 }
 
-/// `^` 윗첨자 표식 규칙. `^` 바로 뒤가 공백/탭/끝이면 리터럴 `^`로 남고,
-/// 아니면 `^`를 떼고 윗첨자를 배정한다. 윗첨자는 다음 공백/탭까지 이어지며,
-/// 구간 중간의 `^`는 닫는 표식으로 구간을 거기서 끊고 그 `^` 자체는
-/// 출력에서 완전히 사라진다(`^둘^만` → 윗첨자 "둘" + 평문 "만").
+/// `^` 윗첨자 표식 규칙. `^` 바로 뒤가 종결 문자(공백/탭/마침표/쉼표)나
+/// 끝이면 리터럴 `^`로 남고, 아니면 `^`를 떼고 윗첨자를 배정한다. 윗첨자는
+/// 다음 종결 문자까지 이어지며, 구간 중간의 `^`는 닫는 표식으로 구간을
+/// 거기서 끊고 그 `^` 자체는 출력에서 완전히 사라진다(`^둘^만` → 윗첨자
+/// "둘" + 평문 "만").
 struct Superscript;
 
 impl RunRestyler for Superscript {
@@ -482,20 +484,21 @@ impl RunRestyler for Superscript {
                 continue;
             }
             match text[i + 1..].chars().next() {
-                // 다음 문자가 없거나 공백/탭이면 리터럴 `^`다.
-                None | Some(' ') | Some('\t') => i += 1,
+                // 다음 문자가 없거나 종결 문자면 리터럴 `^`다.
+                None => i += 1,
+                Some(c) if is_superscript_terminator(c) => i += 1,
                 Some(_) => {
                     let start = i + 1;
                     let mut end = text.len();
                     for (j, c) in text[start..].char_indices() {
-                        if c == ' ' || c == '\t' {
-                            end = start + j;
-                            break;
-                        }
                         // 구간 중간의 `^`는 닫는 표식이다. 구간은 이 `^`
                         // 앞까지고, 표식까지 포함해 잡아 뒤에서 떼어 낸다.
                         if c == '^' {
                             end = start + j + 1;
+                            break;
+                        }
+                        if is_superscript_terminator(c) {
+                            end = start + j;
                             break;
                         }
                     }
@@ -837,6 +840,31 @@ mod tests {
                 ("가".to_string(), true),
                 ("될".to_string(), false)
             ]
+        );
+    }
+
+    #[test]
+    fn superscript_ends_at_sentence_punctuation() {
+        // 마침표·쉼표는 공백과 마찬가지로 구간을 끊는 종결 문자다.
+        assert_eq!(
+            Superscript.split_node("결과는 ^②. 와 같다", None),
+            vec![
+                ("결과는 ".to_string(), false),
+                ("②".to_string(), true),
+                (". 와 같다".to_string(), false)
+            ]
+        );
+        assert_eq!(
+            Superscript.split_node("^둘, 셋", None),
+            vec![
+                ("둘".to_string(), true),
+                (", 셋".to_string(), false)
+            ]
+        );
+        // 종결 문자 바로 뒤의 `^`는 리터럴이다.
+        assert_eq!(
+            Superscript.split_node("값은 ^..", None),
+            vec![("값은 ^..".to_string(), false)]
         );
     }
 
