@@ -26,7 +26,7 @@ static GIYEOK_TITLE_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^제\s*목\s*[:：]?\s*").unwrap());
 static NUM_SUB_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(\d+\.\d+)\s*(.*)$").unwrap());
 static NUM_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(\d+\.)\s*(.*)$").unwrap());
-static NOTE_MARKER_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(\\?[*※])\s+(.*)$").unwrap());
+static NOTE_MARKER_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(\\?[*※]{1,3})\s+(.*)$").unwrap());
 static TITLE_COMMAND_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^\[\[(붙임|외부제목)\]\]\s*(.*)$").unwrap());
 
@@ -111,15 +111,22 @@ fn table_row(text: &str) -> Vec<String> {
 }
 
 /// 줄 앞의 불릿 글리프와 나머지 본문. '*'는 뒤에 공백이 올 때만 목록으로
-/// 본다(`**굵게**` 표식과 구별). '+'와 원문자 번호도 불릿이다.
+/// 보고, 연달아 최대 3개까지 하나의 별표 표기로 흡수한다(`** 텍스트`,
+/// `*** 텍스트`도 `* 텍스트`와 같은 별표 항목). 표기 뒤에 공백이 없으면
+/// 목록이 아니다(`**굵게**` 표식과 구별). '+'와 원문자 번호도 불릿이다.
 fn bullet_split(stripped: &str) -> Option<(char, &str)> {
     let c = stripped.chars().next()?;
     if !is_bullet_glyph(c) {
         return None;
     }
-    let rest = &stripped[c.len_utf8()..];
-    if c == '*' && !rest.starts_with(char::is_whitespace) {
-        return None;
+    let mut rest = &stripped[c.len_utf8()..];
+    if c == '*' {
+        // 연달은 '*'를 표기에 흡수한다(총 3개까지).
+        let extra = rest.chars().take_while(|&ch| ch == '*').count().min(2);
+        rest = &rest[extra..];
+        if !rest.starts_with(char::is_whitespace) {
+            return None;
+        }
     }
     Some((c, rest))
 }
@@ -1007,6 +1014,38 @@ mod tests {
         assert_eq!(title, "T");
         assert_eq!(blocks[0].0, "depth1");
         assert_eq!(blocks[0].1, "**굵은 본문**");
+    }
+
+    #[test]
+    fn multi_asterisk_note_marker_matches_single_asterisk() {
+        // 별표 표기는 최대 3개까지 하나의 표기로 흡수된다. `** 텍스트`,
+        // `*** 텍스트`는 `* 텍스트`와 같은 별표 항목이고, 들여쓰기가 있으면
+        // 같은 asterisk 블록이 된다. 표기 뒤에 공백이 없으면 `**굵게**`
+        // 표식 줄 그대로다.
+        let src = lines("제목: T\n\t* 하나\n\t** 둘\n\t*** 셋");
+        let (_, blocks) = parse_source(&src, "테스트").unwrap();
+        assert_eq!(
+            blocks,
+            vec![
+                ("asterisk".to_string(), "하나".to_string()),
+                ("asterisk".to_string(), "둘".to_string()),
+                ("asterisk".to_string(), "셋".to_string()),
+            ]
+        );
+
+        // 들여쓰기 없이도 `*` 별표 항목과 같게 분류된다.
+        let src = lines("제목: T\n* 하나\n** 둘\n*** 셋\n**** 넷");
+        let (_, blocks) = parse_source(&src, "테스트").unwrap();
+        let bodies: Vec<&str> = blocks.iter().map(|b| b.1.as_str()).collect();
+        assert_eq!(bodies, vec!["하나", "둘", "셋", "**** 넷"]);
+
+        // `- ** 텍스트` 주석 표기도 3개까지 확장된다.
+        let src = lines("제목: T\n- * 하나\n- ** 둘");
+        let (_, blocks) = parse_source(&src, "테스트").unwrap();
+        assert_eq!(blocks[0].0, "asterisk");
+        assert_eq!(blocks[0].1, "하나");
+        assert_eq!(blocks[1].0, "asterisk");
+        assert_eq!(blocks[1].1, "둘");
     }
 
     #[test]
