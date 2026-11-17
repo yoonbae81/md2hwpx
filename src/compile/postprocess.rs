@@ -466,8 +466,9 @@ fn superscript_char_pr_ids(
 }
 
 /// `^` 윗첨자 표식 규칙. `^` 바로 뒤가 공백/탭/끝이면 리터럴 `^`로 남고,
-/// 아니면 `^`를 떼고 다음 공백/탭/끝까지를 윗첨자로 배정한다. 윗첨자 구간
-/// 안의 `^`(다음이 공백이 아닌)는 구간에 흡수된다.
+/// 아니면 `^`를 떼고 윗첨자를 배정한다. 윗첨자는 다음 공백/탭까지 이어지며,
+/// 구간 중간의 `^`는 닫는 표식으로 구간을 거기서 끊고 그 `^` 자체는
+/// 출력에서 완전히 사라진다(`^둘^만` → 윗첨자 "둘" + 평문 "만").
 struct Superscript;
 
 impl RunRestyler for Superscript {
@@ -491,20 +492,30 @@ impl RunRestyler for Superscript {
                             end = start + j;
                             break;
                         }
+                        // 구간 중간의 `^`는 닫는 표식이다. 구간은 이 `^`
+                        // 앞까지고, 표식까지 포함해 잡아 뒤에서 떼어 낸다.
+                        if c == '^' {
+                            end = start + j + 1;
+                            break;
+                        }
                     }
                     // 구간은 `^` 바이트부터 잡아 평문 조각이 표식을 가져가지
-                    // 않게 하고, 이후 윗첨자 조각에서 표식 한 글자를 떼어 낸다.
+                    // 않게 하고, 이후 윗첨자 조각에서 표식을 떼어 낸다.
                     spans.push((i, end));
                     i = end;
                 }
             }
         }
         // 구간은 `^` 바이트에서 시작하므로, 윗첨자 조각에서 표식 한 글자를
-        // 떼어 낸다(구간 앞 평문은 `^` 앞에서 끊긴다).
+        // 떼어 낸다(구간 앞 평문은 `^` 앞에서 끊긴다). 닫는 `^`로 끝나는
+        // 구간은 뒤의 표식 한 글자도 떼어 완전히 사라지게 한다.
         let mut pieces = spans_to_pieces(text, &spans);
         for (part, derived) in &mut pieces {
             if *derived && part.starts_with('^') {
                 part.remove(0);
+            }
+            if *derived && part.ends_with('^') {
+                part.pop();
             }
         }
         pieces
@@ -818,13 +829,41 @@ mod tests {
 
     #[test]
     fn superscript_multiple() {
-        // 윗첨자 구간 안의 `^`(다음이 공백이 아님)는 구간에 흡수된다.
+        // 윗첨자 구간 중간의 `^`는 닫는 표식으로 구간을 끊고 사라진다.
         assert_eq!(
             Superscript.split_node("이^가^될", None),
             vec![
                 ("이".to_string(), false),
-                ("가^될".to_string(), true)
+                ("가".to_string(), true),
+                ("될".to_string(), false)
             ]
+        );
+    }
+
+    #[test]
+    fn superscript_closing_caret_disappears() {
+        // `^②^`는 ②만 윗첨자고 두 번째 `^`는 출력에 남지 않는다.
+        assert_eq!(
+            Superscript.split_node("앞^둘^만", None),
+            vec![
+                ("앞".to_string(), false),
+                ("둘".to_string(), true),
+                ("만".to_string(), false)
+            ]
+        );
+        // 닫는 `^` 뒤에 바로 공백이 와도 표식은 사라진다.
+        assert_eq!(
+            Superscript.split_node("앞^둘^ 뒤", None),
+            vec![
+                ("앞".to_string(), false),
+                ("둘".to_string(), true),
+                (" 뒤".to_string(), false)
+            ]
+        );
+        // 문장 끝의 닫는 `^`도 사라진다.
+        assert_eq!(
+            Superscript.split_node("앞^둘^", None),
+            vec![("앞".to_string(), false), ("둘".to_string(), true)]
         );
     }
 

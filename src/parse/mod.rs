@@ -36,7 +36,7 @@ pub fn hwpx_to_markdown_bytes(bytes: &[u8], label: &str) -> Result<(String, repo
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::hwpx::test_fixtures::fixture_hwpx;
+    use super::hwpx::test_fixtures::{fixture_hwpx, fixture_hwpx_with_header};
 
     #[test]
     fn converts_plain_paragraph_document() {
@@ -65,6 +65,23 @@ mod tests {
         assert!(markdown.contains("보이는 텍스트"));
         assert!(!markdown.contains("숨긴 메모"));
         assert_eq!(report.paragraph_count, 1);
+    }
+
+    #[test]
+    fn superscript_closing_caret_restored_only_when_text_follows() {
+        // 닫는 윗첨자 표식은 공백 없이 다른 글자가 바로 붙을 때만 복원한다.
+        // 공백·문단 끝 뒤에는 `^` 하나면 왕복 손실이 없고, 붉은 별표 변형은
+        // 윗첨자 표식 대상이 아니다.
+        let header = r##"<?xml version="1.0" encoding="utf-8"?><hh:header xmlns:hh="http://www.hancom.co.kr/hwpml/2011/head"><hh:charProperties itemCnt="2"><hh:charPr id="7"><hh:supscript/></hh:charPr><hh:charPr id="8" textColor="#FF0000"><hh:supscript/></hh:charPr></hh:charProperties></hh:header>"##;
+        let section = r#"<?xml version="1.0" encoding="utf-8"?><hp:hs xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph"><hp:p><hp:run><hp:t>앞</hp:t></hp:run><hp:run charPrIDRef="7"><hp:t>둘</hp:t></hp:run><hp:run><hp:t>만</hp:t></hp:run></hp:p><hp:p><hp:run><hp:t>앞</hp:t></hp:run><hp:run charPrIDRef="7"><hp:t>둘</hp:t></hp:run><hp:run><hp:t> 뒤</hp:t></hp:run></hp:p><hp:p><hp:run charPrIDRef="7"><hp:t>끝</hp:t></hp:run></hp:p><hp:p><hp:run><hp:t>빨강</hp:t></hp:run><hp:run charPrIDRef="8"><hp:t>*</hp:t></hp:run><hp:run><hp:t>다음</hp:t></hp:run></hp:p></hp:hs>"#;
+        let bytes = fixture_hwpx_with_header(&[("Contents/section0.xml", section)], header);
+        let (markdown, _) = hwpx_to_markdown_bytes(&bytes, "test.hwpx").unwrap();
+        assert!(markdown.contains("앞^둘^만"), "{}", markdown);
+        assert!(markdown.contains("앞^둘 뒤"), "{}", markdown);
+        assert!(markdown.contains("^끝"), "{}", markdown);
+        assert!(!markdown.contains("^끝^"), "{}", markdown);
+        assert!(markdown.contains("빨강*다음"), "{}", markdown);
+        assert!(!markdown.contains("빨강^*다음"), "{}", markdown);
     }
 
     #[test]

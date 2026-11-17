@@ -137,6 +137,15 @@ pub mod test_fixtures {
     /// 최소 HWPX 패키지를 메모리에서 만든다(바이너리 픽스처 커밋 회피).
     /// `sections`는 (항목 이름, XML 내용) 쌍이다.
     pub fn fixture_hwpx(sections: &[(&str, &str)]) -> Vec<u8> {
+        fixture_hwpx_with_header(
+            sections,
+            r#"<?xml version="1.0" encoding="utf-8"?><hh:header/>"#,
+        )
+    }
+
+    /// 헤더 XML을 지정할 수 있는 fixture 변형. 윗첨자 charPr 복원처럼
+    /// header.xml의 charProperties를 읽는 규칙의 테스트에 쓰인다.
+    pub fn fixture_hwpx_with_header(sections: &[(&str, &str)], header: &str) -> Vec<u8> {
         let mut buf = Vec::new();
         {
             let mut zw = zip::ZipWriter::new(Cursor::new(&mut buf));
@@ -151,7 +160,7 @@ pub mod test_fixtures {
             zw.start_file("Contents/content.hpf", deflated).unwrap();
             zw.write_all(b"<?xml version=\"1.0\" encoding=\"utf-8\"?><opf:Package/>").unwrap();
             zw.start_file("Contents/header.xml", deflated).unwrap();
-            zw.write_all(b"<?xml version=\"1.0\" encoding=\"utf-8\"?><hh:header/>").unwrap();
+            zw.write_all(header.as_bytes()).unwrap();
             for (name, xml) in sections {
                 zw.start_file(name, deflated).unwrap();
                 zw.write_all(xml.as_bytes()).unwrap();
