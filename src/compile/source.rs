@@ -294,10 +294,38 @@ impl<'a> SourceParser<'a> {
                 self.first_nonempty = Some(stripped.to_string());
             }
             if let Some((variant, text)) = title_command(stripped) {
-                self.blocks
-                    .push((TITLE_VARIANT_BLOCK.to_string(), variant.to_string()));
-                if let Some(text) = text {
-                    self.blocks.push((TITLE_TEXT_BLOCK.to_string(), text));
+                let has_title_command = self
+                    .blocks
+                    .iter()
+                    .any(|(k, _)| k == TITLE_VARIANT_BLOCK);
+                let has_body_blocks = self
+                    .blocks
+                    .iter()
+                    .any(|(k, _)| k != TITLE_VARIANT_BLOCK && k != TITLE_TEXT_BLOCK);
+
+                if !has_title_command && !has_body_blocks {
+                    self.blocks
+                        .push((TITLE_VARIANT_BLOCK.to_string(), variant.to_string()));
+                    if let Some(text) = text {
+                        self.blocks.push((TITLE_TEXT_BLOCK.to_string(), text));
+                    }
+                } else {
+                    let label = if variant == dialect::ATTACH_VARIANT {
+                        "붙임"
+                    } else {
+                        "외부제목"
+                    };
+                    let heading_text = match text {
+                        Some(t) => {
+                            if t.starts_with(label) || t.starts_with(&format!("[{label}]")) {
+                                t
+                            } else {
+                                format!("[{label}] {t}")
+                            }
+                        }
+                        None => format!("[{label}]"),
+                    };
+                    self.blocks.push(("heading".to_string(), heading_text));
                 }
                 continue;
             }
@@ -943,6 +971,52 @@ mod tests {
         let (title, blocks) = parse_source(&src, "테스트").unwrap();
         assert_eq!(title, "실제 보고서 제목");
         assert_eq!(blocks[0].0, TITLE_VARIANT_BLOCK);
+    }
+
+    #[test]
+    fn late_attach_command_becomes_body_heading_and_preserves_title() {
+        // 본문 콘텐츠(불릿/헤딩 등)가 시작된 이후에 나오는 [[붙임]]은
+        // 첫 페이지의 title 표지 변형이 아니라 본문 섹션 제목(heading)이 된다.
+        let src = lines("# 본 보고서 제목\n1. 개요\n- 본문 내용\n[[붙임]] 붙임 1: 세부 추진 계획\n- 붙임 내용");
+        let (title, blocks) = parse_source(&src, "테스트").unwrap();
+        assert_eq!(title, "본 보고서 제목");
+        assert!(!blocks.iter().any(|(k, _)| k == TITLE_VARIANT_BLOCK));
+        assert!(!blocks.iter().any(|(k, _)| k == TITLE_TEXT_BLOCK));
+
+        let attach_block = blocks
+            .iter()
+            .find(|(_, v)| v.contains("세부 추진 계획"))
+            .expect("붙임 헤딩 블록이 존재해야 한다");
+        assert_eq!(attach_block.0, "heading");
+        assert_eq!(attach_block.1, "붙임 1: 세부 추진 계획");
+    }
+
+    #[test]
+    fn late_attach_command_without_label_prefixes_bracket_label() {
+        // 이미 본문이 시작된 뒤 텍스트에 '붙임'이 안 들어간 [[붙임]]은 '[붙임] 텍스트' 헤딩이 된다.
+        let src = lines("제목: 본문\n- 항목\n[[붙임]] 관련 법안 비교표\n- 내용");
+        let (title, blocks) = parse_source(&src, "테스트").unwrap();
+        assert_eq!(title, "본문");
+        assert!(!blocks.iter().any(|(k, _)| k == TITLE_VARIANT_BLOCK));
+        let attach_block = blocks
+            .iter()
+            .find(|(_, v)| v.contains("관련 법안 비교표"))
+            .expect("붙임 헤딩 블록이 존재해야 한다");
+        assert_eq!(attach_block.0, "heading");
+        assert_eq!(attach_block.1, "[붙임] 관련 법안 비교표");
+    }
+
+    #[test]
+    fn late_attach_command_without_text_becomes_bracket_label_heading() {
+        let src = lines("# 본문\n- 항목\n[[붙임]]\n- 붙임 내용");
+        let (title, blocks) = parse_source(&src, "테스트").unwrap();
+        assert_eq!(title, "본문");
+        assert!(!blocks.iter().any(|(k, _)| k == TITLE_VARIANT_BLOCK));
+        let attach_block = blocks
+            .iter()
+            .find(|(k, v)| k == "heading" && v == "[붙임]")
+            .expect("[붙임] 단독 헤딩 블록이 존재해야 한다");
+        assert_eq!(attach_block.0, "heading");
     }
 
     #[test]
