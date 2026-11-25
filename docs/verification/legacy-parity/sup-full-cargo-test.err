@@ -1,0 +1,7 @@
+   Compiling hwpx v1.0.0 (/Users/y/Github/md2hwpx)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.73s
+     Running unittests src/lib.rs (target/debug/deps/hwpx-e9f9a7ce8cd9b185)
+     Running unittests src/bin/hwpx2md.rs (target/debug/deps/hwpx2md-b3cfb959e6f4d0b7)
+     Running unittests src/bin/md2hwpx.rs (target/debug/deps/md2hwpx-9b812b629c7ea14d)
+     Running tests/cli_exit_codes.rs (target/debug/deps/cli_exit_codes-f4854589178c9921)
+   Doc-tests hwpx

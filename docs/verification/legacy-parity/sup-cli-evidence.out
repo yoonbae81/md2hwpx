@@ -1,0 +1,8 @@
+== header.xml charPr with supscript ==
+== header.xml full charPr elements containing supscript ==
+1
+== section0.xml runs around 윗첨자 ==
+<hp:run charPrIDRef="21"><hp:t>이것은</hp:t></hp:run>
+<hp:run charPrIDRef="65"><hp:t>윗첨자입니다.</hp:t></hp:run>
+== header.xml charPr 65 (윗첨자 run의 charPr) ==
+<hh:charPr id="65" height="1500" textColor="#000000" shadeColor="none" useFontSpace="0" useKerning="0" symMark="NONE" borderFillIDRef="3"><hh:fontRef hangul="4" latin="10" hanja="2" japanese="4" other="4" symbol="4" user="4" /><hh:ratio hangul="100" latin="100" hanja="100" japanese="100" other="100" symbol="100" user="100" /><hh:spacing hangul="0" latin="0" hanja="0" japanese="0" other="0" symbol="0" user="0" /><hh:relSz hangul="100" latin="100" hanja="100" japanese="100" other="100" symbol="100" user="100" /><hh:offset hangul="0" latin="0" hanja="0" japanese="0" other="0" symbol="0" user="0" /><hh:underline type="NONE" shape="SOLID" color="#000000" /><hh:strikeout shape="NONE" color="#000000" /><hh:outline type="NONE" /><hh:shadow type="NONE" color="#C0C0C0" offsetX="10" offsetY="10" /><hh:supscript /></hh:charPr>

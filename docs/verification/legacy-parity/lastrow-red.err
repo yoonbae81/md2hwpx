@@ -1,0 +1,5 @@
+    Blocking waiting for file lock on build directory
+   Compiling hwpx v1.0.0 (/Users/y/Github/md2hwpx)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.41s
+     Running unittests src/lib.rs (target/debug/deps/hwpx-e9f9a7ce8cd9b185)
+error: test failed, to rerun pass `--lib`

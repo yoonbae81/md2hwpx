@@ -7,6 +7,7 @@ use crate::shared::error::{err, AppError, Result};
 use crate::compile::patterns::{TEMPLATE_DATE_RE, TEMPLATE_MARKER_RE};
 use crate::compile::render::render_block;
 use crate::compile::source::Block;
+use crate::shared::dialect;
 use crate::shared::xmltree::{
     append_child, deep_clone, find_all_desc, find_children, find_desc,
     insert_element, iter_elements, ptr, remove_child, text_nodes, HP, NodeRef,
@@ -622,6 +623,11 @@ fn apply_heading_fallback(blocks: &mut [Block], prototypes: &[(String, NodeRef)]
 
 fn ensure_prototypes_exist(prototypes: &[(String, NodeRef)], blocks: &[Block]) -> Result<()> {
     for (kind, _) in blocks {
+        // attach_title는 표지 변형 문단을 그 자리에 복제해 쓰므로 prototype이
+        // 필요 없다.
+        if kind == "attach_title" {
+            continue;
+        }
         if !prototypes.iter().any(|(k, _)| k == kind) {
             return err(format!("[[{kind}]] prototype memo not found in template.hwpx."));
         }
@@ -686,8 +692,26 @@ fn render_blocks(
     prefixes: &[(String, NodeRef)],
     blocks: &[Block],
     styles: &HashMap<String, HashMap<String, String>>,
+    attach_title_source: &Option<NodeRef>,
 ) -> Result<()> {
     for (kind, value) in blocks {
+        // 문장 중간의 [[붙임]]: 표지 변형 문단을 그 자리에 복제해 셀 텍스트를
+        // 쓴다. prototype/prefix 없이 자체 완결 문단이다.
+        if kind == "attach_title" {
+            let Some(source) = attach_title_source else {
+                return err(
+                    "[[붙임]] title variant (attachment) not found in template.hwpx.",
+                );
+            };
+            let paragraph = deep_clone(source);
+            remove_variant_markers(&paragraph);
+            replace_template_dates(&paragraph);
+            let table = find_desc(&paragraph, HP, "tbl")
+                .ok_or_else(|| AppError("attach title table not found.".into()))?;
+            write_title_cell(&table, value)?;
+            append_child(root, paragraph);
+            continue;
+        }
         let prefix = prefixes
             .iter()
             .find(|(k, _)| k == kind)
@@ -739,6 +763,13 @@ pub fn build_section(
         requested.insert(k.to_lowercase(), v.clone());
     }
     let catalog = read_template_catalog(&root)?;
+    // 문장 중간의 [[붙임]] 블록(attach_title)이 쓸 붙임 표지 문단 원본.
+    // install_title가 title 변형 문단을 모두 치우기 전에 복제해 둔다.
+    let attach_title_source = catalog
+        .title
+        .iter()
+        .find(|(name, _)| name == dialect::ATTACH_VARIANT)
+        .map(|(_, p)| deep_clone(p));
     let mut blocks = normalize_blocks(blocks);
     let prototypes = deep_copied_prototypes(&catalog);
     let prefixes = interval_prefixes(&root, &catalog)?;
@@ -765,7 +796,14 @@ pub fn build_section(
     }
     prune_direct_paragraphs(&root, &selected_title, &title_metadata);
     let styles = collect_component_styles(&catalog, &blocks)?;
-    render_blocks(&root, &prototypes, &prefixes, &blocks, &styles)?;
+    render_blocks(
+        &root,
+        &prototypes,
+        &prefixes,
+        &blocks,
+        &styles,
+        &attach_title_source,
+    )?;
     Ok(root)
 }
 

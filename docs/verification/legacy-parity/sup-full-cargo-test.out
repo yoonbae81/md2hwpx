@@ -1,0 +1,213 @@
+
+running 182 tests
+test compile::patterns::tests::dialect_tokens_are_documented ... ok
+test compile::cli::tests::output_collides_detects_same_file ... ok
+test compile::linefit::tests::missing_char_properties_empty_section_is_ok_false ... ok
+test compile::cli::tests::default_output_name_falls_back_when_title_is_empty ... ok
+test compile::linefit::tests::missing_char_properties_with_paragraph_run_is_ok_false ... ok
+test compile::postprocess::tests::superscript_literal_caret ... ok
+test compile::postprocess::tests::superscript_multiple ... ok
+test compile::linefit::tests::alternating_15pt_and_plain_paragraphs_fit_and_reuse ... ok
+test compile::linefit::tests::repeated_same_variant_is_created_once ... ok
+test compile::hwpx::tests::rewrite_hwpx_bytes_validates_package_independently ... ok
+test compile::linefit::tests::mixed_base_run_ids_get_distinct_variants ... ok
+test compile::hwpx::tests::rewrite_hwpx_bytes_replaces_section0_and_keeps_other_entries ... ok
+test compile::postprocess::tests::superscript_split_basic ... ok
+test compile::render::tests::render_box_without_items_clears_sample ... ok
+test compile::render::tests::render_box_fills_title_and_duplicates_item_paragraphs ... ok
+test compile::postprocess::tests::unattached_asterisk_is_left_alone ... ok
+test compile::render::tests::render_highlight_single_item_keeps_one_paragraph ... ok
+test compile::render::tests::render_highlight_writes_one_paragraph_per_item ... ok
+test compile::postprocess::tests::attached_asterisk_becomes_red_superscript ... ok
+test compile::postprocess::tests::existing_superscript_char_pr_is_reused ... ok
+test compile::postprocess::tests::markdown_bold_splits_runs_and_derives_bold_char_pr ... ok
+test compile::postprocess::tests::superscript_run_has_supscript_char_pr ... ok
+test compile::postprocess::tests::run_without_char_pr_ref_keeps_none_on_segments ... ok
+test compile::postprocess::tests::line_break_resets_attached_context ... ok
+test compile::render::tests::render_table_last_data_row_uses_bottom_prototype ... ok
+test compile::patterns::tests::date_regex_matches_spaced_and_compact_forms ... ok
+test compile::render::tests::render_table_single_data_row_uses_bottom_prototype ... ok
+test compile::cli::tests::default_output_name_appends_hhmmss ... ok
+test compile::postprocess::tests::attached_parenthesis_shrinks_only_attached ... ok
+test compile::source::tests::command_line_is_never_the_document_title ... ok
+test compile::source::tests::box_items_keep_body_glyphs_and_bold ... ok
+test compile::source::tests::arrow_note_in_box_body_loses_the_box_glyph ... ok
+test compile::source::tests::arrow_note_line_is_not_a_title_gate_candidate ... ok
+test compile::source::tests::arrow_note_after_sibling_is_deepened_and_stays ... ok
+test compile::source::tests::arrow_note_line_takes_relative_depth ... ok
+test compile::source::tests::double_asterisk_line_is_not_a_bullet_nor_title ... ok
+test compile::source::tests::double_bracket_box_command_and_legacy_single ... ok
+test compile::source::tests::blank_only_between_dashes_is_horizontal_rule ... ok
+test compile::source::tests::equals_is_now_ordinary_text ... ok
+test compile::source::tests::adjacent_dashes_are_horizontal_rules ... ok
+test compile::source::tests::attach_command_without_text_skips_title_text ... ok
+test compile::source::tests::box_collects_following_indented_bullets ... ok
+test compile::source::tests::attach_command_selects_variant_and_title ... ok
+test compile::source::tests::bullet_glyphs_are_free_and_depth_is_relative ... ok
+test compile::source::tests::external_command_selects_external ... ok
+test compile::source::tests::circled_number_is_a_bullet_and_stays_in_body ... ok
+test compile::source::tests::circled_number_in_body_promotes_to_marker_input ... ok
+test compile::source::tests::circled_number_after_sibling_is_depth2 ... ok
+test compile::source::tests::dash_wraps_highlight_block_within_window ... ok
+test compile::source::tests::dash_pair_beyond_window_is_horizontal_rule ... ok
+test compile::source::tests::circle_and_ieung_after_sibling_are_depth2 ... ok
+test compile::source::tests::glyph_after_box_glyph_decides_the_item ... ok
+test compile::source::tests::missing_title_falls_back_to_first_nonempty_line ... ok
+test compile::source::tests::plus_sign_is_a_bullet_glyph ... ok
+test compile::source::tests::parses_markdown_title_and_box ... ok
+test compile::source::tests::parses_title_headings_and_depths ... ok
+test compile::source::tests::whitespace_only_source_is_still_an_error ... ok
+test compile::source::tests::tab_indented_bullets_rank_relative ... ok
+test compile::source::tests::plus_sign_needs_no_trailing_space ... ok
+test compile::source::tests::quote_markers_are_stripped_from_line_starts ... ok
+test parse::cli::tests::default_output_name_replaces_extension_with_md ... ok
+test parse::cli::tests::default_output_name_strips_zero_width_and_bidi ... ok
+test compile::source::tests::window_boundary_at_five_lines_is_highlight ... ok
+test compile::source::tests::window_distance_four_is_highlight ... ok
+test compile::source::tests::invisible_paste_chars_on_fences_still_pair_highlight ... ok
+test compile::source::tests::table_block_is_encoded_as_json ... ok
+test compile::source::tests::quoted_table_is_parsed ... ok
+test parse::cli::tests::output_collides_detects_same_file ... ok
+test parse::parse::tests::cell_newlines_become_br_in_html ... ok
+test parse::parse::tests::damaged_single_row_table_does_not_panic_and_warns ... ok
+test parse::parse::tests::collect_paragraphs_never_descends_into_tbl ... ok
+test parse::parse::tests::hyperlink_field_text_outside_memo_is_kept ... ok
+test parse::parse::tests::leading_whitespace_single_cell_is_not_a_subtitle_candidate ... ok
+test parse::parse::tests::memo_exclusion_matches_begin_id_ref_not_any_field_end ... ok
+test parse::parse::tests::sections_to_blocks_collects_nonblank_paragraphs ... ok
+test parse::parse::tests::multiline_cells_in_spanless_table_become_br_in_pipe_table ... ok
+test parse::hwpx::tests::missing_sections_yields_empty_vec ... ok
+test parse::hwpx::tests::truncated_zip_is_an_error ... ok
+test parse::parse::tests::spanless_data_table_emits_full_pipe_table ... ok
+test parse::parse::tests::t_parts_recovers_tail_only_text ... ok
+test parse::parse::tests::t_parts_sees_fwspace_absorbed_text_end_to_end ... ok
+test parse::parse::tests::t_parts_splits_at_nested_line_break ... ok
+test parse::postprocess::bullets::tests::blank_lines_keep_context_but_text_breaks_it ... ok
+test parse::postprocess::bullets::tests::circled_numerals_are_preserved_in_body ... ok
+test parse::parse::tests::table_to_html_preserves_col_and_row_span ... ok
+test parse::postprocess::bullets::tests::contextual_bullets_follow_relative_indentation ... ok
+test parse::postprocess::bullets::tests::deep_raw_indent_normalizes_to_computed_depth ... ok
+test parse::postprocess::bullets::tests::empty_bullets_are_untouched ... ok
+test parse::postprocess::bullets::tests::fixed_glyphs_map_to_conventional_depths ... ok
+test parse::postprocess::bullets::tests::highlight_boundary_dashes_pass_through_untouched ... ok
+test parse::postprocess::bullets::tests::indented_asterisk_footnotes_do_not_pollute_bullet_context ... ok
+test parse::postprocess::bullets::tests::note_glyphs_stay_in_body ... ok
+test parse::postprocess::bullets::tests::star_and_note_markers_are_left_to_later_passes ... ok
+test parse::postprocess::bullets::tests::visible_sub_items_bump_below_same_indent_glyph ... ok
+test compile::source::tests::markdown_numbered_heading_sets_fallback_title ... ok
+test compile::source::tests::markdown_heading_levels_map_to_block_kinds ... ok
+test parse::parse::tests::multiline_subtitle_cell_becomes_br_in_pipe_row ... ok
+test parse::parse::tests::subtitle_table_emits_pipe_row ... ok
+test parse::parse::tests::paragraph_serializes_table_in_place ... ok
+test compile::source::tests::front_matter_fence_still_uses_dashes ... ok
+test compile::source::tests::doc_leading_dash_is_never_highlight ... ok
+test compile::source::tests::horizontal_rule_dashes_are_ignored ... ok
+test parse::hwpx::tests::reads_sections_in_order_from_package ... ok
+test parse::parse::tests::merged_table_falls_back_to_html ... ok
+test parse::parse::tests::single_column_and_pipe_containing_tables_fall_back_to_html ... ok
+test parse::parse::tests::title_bar_table_emits_pipe_row ... ok
+test compile::template::tests::named_table_memo_registers_table_variant_prototype ... ok
+test parse::postprocess::heading::tests::subtitle_length_limit_counts_chars_not_bytes ... ok
+test parse::postprocess::footnote::tests::standalone_star_bullets_are_untouched ... ok
+test parse::postprocess::footnote::tests::asterisk_after_word_reference_is_indented ... ok
+test parse::postprocess::cover::tests::non_date_first_line_is_untouched ... ok
+test parse::postprocess::cover::tests::dates_outside_cover_position_are_kept ... ok
+test parse::postprocess::cover::tests::cover_date_after_title_is_dropped ... ok
+test parse::postprocess::cover::tests::fwspace_absorbed_date_variant_is_dropped ... ok
+test parse::postprocess::heading::tests::sentence_like_numbered_lines_are_not_promoted ... ok
+test parse::postprocess::heading::tests::attachment_numbered_label_is_preserved ... ok
+test parse::postprocess::heading::tests::numbered_heading_length_limit_counts_chars_not_bytes ... ok
+test parse::postprocess::heading::tests::attachment_table_becomes_attach_command ... ok
+test parse::postprocess::heading::tests::numbered_headings_use_source_dialect_tokens ... ok
+test parse::postprocess::spacing::tests::bare_numbered_heading_shapes_get_a_blank_before ... ok
+test parse::postprocess::heading::tests::stripped_or_marked_lines_are_not_restripped ... ok
+test parse::postprocess::spacing::tests::blank_inside_table_run_is_deleted ... ok
+test parse::postprocess::heading::tests::title_bar_table_with_data_rows_is_kept ... ok
+test parse::postprocess::spacing::tests::box_stays_contiguous_and_highlight_open_gets_one_blank ... ok
+test parse::postprocess::heading::tests::subtitle_table_strips_compound_cell_like_paragraph_channel ... ok
+test parse::postprocess::heading::tests::title_bar_table_promotes_by_number_steps ... ok
+test parse::postprocess::heading::tests::subtitle_table_promotes_with_position_aware_level ... ok
+test parse::postprocess::heading::tests::compound_guards_reject_sentences_and_long_rests ... ok
+test parse::postprocess::spacing::tests::compaction_is_idempotent ... ok
+test parse::postprocess::spacing::tests::doubly_spaced_document_compacts_to_normal_form ... ok
+test parse::postprocess::heading::tests::compound_numbered_line_strips_leading_segments_at_once ... ok
+test parse::postprocess::spacing::tests::trailing_newline_semantics_is_preserved ... ok
+test parse::postprocess::spacing::tests::unpaired_dashes_stay_separated_rules ... ok
+test parse::postprocess::r#box::tests::highlight_component_table_becomes_highlight_block ... ok
+test parse::postprocess::r#box::tests::plain_data_tables_are_not_components ... ok
+test parse::postprocess::r#box::tests::already_correct_box_commands_pass_through ... ok
+test parse::postprocess::r#box::tests::non_box_brackets_are_untouched ... ok
+test parse::tests::missing_sections_is_a_hard_error ... ok
+test shared::error::tests::create_error_distinguishes_write_from_open ... ok
+test shared::error::tests::open_error_names_file ... ok
+test parse::tests::memo_fields_do_not_leak_into_output ... ok
+test shared::filename::tests::sanitizes_title_for_file_name ... ok
+test parse::postprocess::r#box::tests::box_prefix_becomes_box_command ... ok
+test shared::filename::tests::strips_word_joiner_and_mongolian_separator ... ok
+test shared::filename::tests::strips_zero_width_and_bidi_characters ... ok
+test shared::glyph::tests::body_glyph_overrides_item_glyph_only_when_it_stays ... ok
+test parse::postprocess::spacing::tests::code_fences_and_their_interiors_survive_the_pipeline ... ok
+test shared::glyph::tests::bullet_item_body_builds_body_per_glyph_role ... ok
+test parse::postprocess::tests::rule_order_promotes_subtitle_inside_doc_start_only ... ok
+test shared::glyph::tests::roles_decide_body_and_sub_item ... ok
+test parse::tests::body_text_around_page_number_control_survives ... ok
+test shared::glyph::tests::split_marker_uses_body_glyph_first ... ok
+test shared::xmltree::tests::absorbs_fwspace_into_text ... ok
+test parse::postprocess::heading::tests::promoted_headings_survive_a_second_postprocess_pass ... ok
+test shared::xmltree::tests::clone_is_independent ... ok
+test shared::xmltree::tests::finds_by_namespace_uri_not_prefix ... ok
+test parse::postprocess::tests::code_fence_blocks_are_untouched_by_the_whole_pipeline ... ok
+test parse::tests::converts_plain_paragraph_document ... ok
+test shared::xmltree::tests::rejects_unclosed_tags ... ok
+test shared::xmltree::tests::round_trips_namespaces_and_entities ... ok
+test shared::zip_read::tests::contains_sub_matches_and_misses ... ok
+test shared::zip_read::tests::rejects_dtd_and_entity_declarations ... ok
+test parse::tests::page_number_control_is_not_imported ... ok
+test parse::postprocess::spacing::tests::full_pipeline_is_idempotent_on_compacted_sample ... ok
+test parse::postprocess::spacing::tests::pipeline_output_for_table_last_document_keeps_single_trailing_newline ... ok
+test shared::zip_read::tests::rejects_zip_slip_path_traversal ... ok
+test parse::postprocess::r#box::tests::box_component_table_becomes_box_command_with_items ... ok
+test shared::zip_read::tests::sorts_section_files_numerically ... ok
+test shared::xmltree::tests::rejects_excessively_nested_xml ... ok
+test tests::three_column_table_keeps_default_prototype_and_solid_last_row ... ok
+test tests::superscript_run_has_supscript_char_pr ... ok
+test tests::superscript_roundtrip_preserves_caret ... ok
+test tests::markdown_numbered_heading_compiles_identically_to_bare_form ... ok
+test shared::xmltree::tests::rejects_document_exceeding_text_cap ... ok
+test tests::two_column_table_uses_native_two_column_prototype ... ok
+test tests::markdown_numbered_heading_round_trip_is_fixed ... ok
+test tests::subheading_round_trip_keeps_stripped_form ... ok
+test tests::bare_compound_subheading_converges_to_markdown_form ... ok
+test tests::example_md_round_trip_reaches_markdown_fixed_point ... ok
+test parse::postprocess::spacing::tests::compacted_parse_output_compiles_identically_to_inflated_form ... ok
+test shared::xmltree::tests::parses_wide_document_just_under_element_cap ... ok
+test shared::xmltree::tests::rejects_document_exceeding_element_cap ... ok
+
+test result: ok. 182 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.32s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 6 tests
+test md2hwpx_missing_input_exits_1 ... ok
+test md2hwpx_validation_errors_exit_1_and_warnings_stay_0 ... ok
+test hwpx2md_missing_input_exits_1 ... ok
+test hwpx2md_recoverable_warnings_with_valid_output_exit_0 ... ok
+test success_and_usage_codes_full_matrix ... ok
+test corrupt_input_and_template_and_output_io_exits_1 ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.91s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

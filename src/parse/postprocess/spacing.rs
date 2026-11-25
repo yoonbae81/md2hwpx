@@ -143,7 +143,7 @@ enum Gap {
     Force,
 }
 
-fn gap_decision(cur: LineClass, prev: Option<LineClass>, inside_highlight: bool) -> Gap {
+fn gap_decision(cur: LineClass, prev: Option<LineClass>, inside_highlight: bool, same_indent: bool) -> Gap {
     if inside_highlight {
         return Gap::None;
     }
@@ -162,7 +162,14 @@ fn gap_decision(cur: LineClass, prev: Option<LineClass>, inside_highlight: bool)
         // 불릿은 앞 불릿·박스 명령과 붙는다(박스 항목 계약: 명령 줄보다 깊은
         // 들여쓰기의 불릿은 상자에 속한다).
         LineClass::Bullet => match prev {
-            LineClass::Bullet | LineClass::Command => Gap::None,
+            LineClass::Bullet => {
+                if same_indent {
+                    Gap::None
+                } else {
+                    Gap::Keep
+                }
+            }
+            LineClass::Command => Gap::None,
             _ => Gap::Keep,
         },
         LineClass::Para => {
@@ -229,12 +236,21 @@ pub(crate) fn compact_blank_lines(lines: Vec<String>) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     let mut prev: Option<LineClass> = None;
     let mut gap_pending = false;
+    let mut prev_line = String::new();
     for (i, line) in lines.into_iter().enumerate() {
-        if classes[i] == LineClass::Blank {
+        let cls = classes[i];
+        if cls == LineClass::Blank {
             gap_pending = true;
             continue;
         }
-        let decision = gap_decision(classes[i], prev, highlight.contains_interior(i));
+        let same_indent = if matches!((cls, prev), (LineClass::Bullet, Some(LineClass::Bullet))) {
+            let prev_indent = prev_line.chars().take_while(|c| c.is_whitespace()).count();
+            let cur_indent = line.chars().take_while(|c| c.is_whitespace()).count();
+            prev_indent == cur_indent
+        } else {
+            true
+        };
+        let decision = gap_decision(cls, prev, highlight.contains_interior(i), same_indent);
         let blank_before = match decision {
             Gap::Force => prev.is_some(),
             Gap::Keep => gap_pending && prev.is_some(),
@@ -243,8 +259,9 @@ pub(crate) fn compact_blank_lines(lines: Vec<String>) -> Vec<String> {
         if blank_before {
             out.push(String::new());
         }
-        out.push(line);
-        prev = Some(classes[i]);
+        out.push(line.clone());
+        prev = Some(cls);
+        prev_line = line;
         gap_pending = false;
     }
     if ends_with_blank && !out.is_empty() {
@@ -319,7 +336,9 @@ mod tests {
                 "## 1. 개 요",
                 "",
                 "- (배경) 첫 항목",
+                "",
                 "  - (현황) 하위 항목",
+                "",
                 " ※ 참고 사항",
                 "",
                 "## 2. 주요내용",

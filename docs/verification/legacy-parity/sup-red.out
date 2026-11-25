@@ -1,0 +1,56 @@
+
+running 8 tests
+test compile::postprocess::tests::superscript_split_basic ... FAILED
+test compile::postprocess::tests::superscript_literal_caret ... FAILED
+test compile::postprocess::tests::superscript_run_has_supscript_char_pr ... FAILED
+test compile::postprocess::tests::superscript_multiple ... FAILED
+test compile::postprocess::tests::existing_superscript_char_pr_is_reused ... ok
+test compile::postprocess::tests::attached_asterisk_becomes_red_superscript ... ok
+test tests::superscript_run_has_supscript_char_pr ... FAILED
+test tests::superscript_roundtrip_preserves_caret ... ok
+
+failures:
+
+---- compile::postprocess::tests::superscript_split_basic stdout ----
+
+thread 'compile::postprocess::tests::superscript_split_basic' (16259118) panicked at src/compile/postprocess.rs:755:9:
+assertion `left == right` failed
+  left: []
+ right: [("안녕", false), ("세계", true)]
+
+---- compile::postprocess::tests::superscript_literal_caret stdout ----
+
+thread 'compile::postprocess::tests::superscript_literal_caret' (16259115) panicked at src/compile/postprocess.rs:767:9:
+assertion `left == right` failed
+  left: []
+ right: [("안녕^ 세계", false)]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- compile::postprocess::tests::superscript_run_has_supscript_char_pr stdout ----
+
+thread 'compile::postprocess::tests::superscript_run_has_supscript_char_pr' (16259117) panicked at src/compile/postprocess.rs:801:9:
+assertion failed: apply_superscript(&section, &header).unwrap()
+
+---- compile::postprocess::tests::superscript_multiple stdout ----
+
+thread 'compile::postprocess::tests::superscript_multiple' (16259116) panicked at src/compile/postprocess.rs:776:9:
+assertion `left == right` failed
+  left: []
+ right: [("이", false), ("가^될", true)]
+
+---- tests::superscript_run_has_supscript_char_pr stdout ----
+
+thread 'tests::superscript_run_has_supscript_char_pr' (16259120) panicked at src/lib.rs:94:9:
+section:
+<?xml version="1.0" encoding="utf-8"?><hs:sec xmlns:ha="http://www.hancom.co.kr/hwpml/2011/app" xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph" xmlns:hp10="http://www.hancom.co.kr/hwpml/2016/paragraph" xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section" xmlns:hc="http://www.hancom.co.kr/hwpml/2011/core" xmlns:hh="http://www.hancom.co.kr/hwpml/2011/head" xmlns:hhs="http://www.hancom.co.kr/hwpml/2011/history" xmlns:hm="http://www.hancom.co.kr/hwpml/2011/master-page" xmlns:hpf="http://www.hancom.co.kr/schema/2011/hpf" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf/" xmlns:ooxmlchart="http://www.hancom.co.kr/hwpml/2016/ooxmlchart" xmlns:hwpunitchar="http://www.hancom.co.kr/hwpml/2016/HwpUnitChar" xmlns:epub="http://www.idpf.org/2007/ops" xmlns:config="urn:oasis:names:tc:opendocument:xmlns:config:1.0"><hp:p id="3121190098" paraPrIDRef="28" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="26"><hp:secPr id="" textDirection="HORIZONTAL" spaceColumns="1134" tabStop="8000" tabStopVal="4000" tabStopUnit="HWPUNIT" outlineShapeIDRef="1" memoShapeIDRef="1" textVerticalWidthHead="0" masterPageCnt="0"><hp:grid lineGrid="0" charGrid="0" wonggojiFormat="0" /><hp:startNum pageStartsOn="BOTH" page="0" pic="0" tbl="0" equation="0" /><hp:visibility hideFirstHeader="0" hideFirstFooter="0" hideFirstMasterPage="0" border="SHOW_ALL" fill="SHOW_ALL" hideFirstPageNum="0" hideFirstEmptyLine="0" showLineNumber="0" /><hp:lineNumberShape restartType="0" countBy="0" distance="0" startNumber="0" /><hp:pagePr landscape="WIDELY" width="59528" height="84186" gutterType="LEFT_ONLY"><hp:margin header="2267" footer="2267" gutter="0" left="5669" right="5669" top="3401" bottom="2267" /></hp:pagePr><hp:footNotePr><hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar=")" supscript="0" /><hp:noteLine length="-1" type="SOLID" width="0.12 mm" color="#000000" /><hp:noteSpacing betweenNotes="283" belowLine="567" aboveLine="850" /><hp:numbering type="CONTINUOUS" newNum="1" /><hp:placement place="EACH_COLUMN" beneathText="0" /></hp:footNotePr><hp:endNotePr><hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar=")" supscript="0" /><hp:noteLine length="14692344" type="SOLID" width="0.12 mm" color="#000000" /><hp:noteSpacing betweenNotes="0" belowLine="567" aboveLine="850" /><hp:numbering type="CONTINUOUS" newNum="1" /><hp:placement place="END_OF_DOCUMENT" beneathText="0" /></hp:endNotePr><hp:pageBorderFill type="BOTH" borderFillIDRef="1" textBorder="PAPER" headerInside="0" footerInside="0" fillArea="PAPER"><hp:offset left="1417" right="1417" top="1417" bottom="1417" /></hp:pageBorderFill><hp:pageBorderFill type="EVEN" borderFillIDRef="1" textBorder="PAPER" headerInside="0" footerInside="0" fillArea="PAPER"><hp:offset left="1417" right="1417" top="1417" bottom="1417" /></hp:pageBorderFill><hp:pageBorderFill type="ODD" borderFillIDRef="1" textBorder="PAPER" headerInside="0" footerInside="0" fillArea="PAPER"><hp:offset left="1417" right="1417" top="1417" bottom="1417" /></hp:pageBorderFill></hp:secPr><hp:ctrl><hp:colPr id="" type="NEWSPAPER" layout="LEFT" colCount="1" sameSz="1" sameGap="0" /></hp:ctrl></hp:run><hp:run charPrIDRef="26"><hp:ctrl><hp:pageNum pos="BOTTOM_CENTER" formatType="DIGIT" sideChar="-" /></hp:ctrl></hp:run><hp:run charPrIDRef="11"><hp:tbl id="2104958036" zOrder="1" numberingType="TABLE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" pageBreak="TABLE" repeatHeader="1" rowCnt="1" colCnt="1" cellSpacing="0" borderFillIDRef="4" noAdjust="0"><hp:sz width="47907" widthRelTo="ABSOLUTE" height="3829" heightRelTo="ABSOLUTE" protect="0" /><hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="PARA" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0" /><hp:outMargin left="0" right="0" top="0" bottom="0" /><hp:inMargin left="510" right="510" top="141" bottom="141" /><hp:tr><hp:tc name="" header="0" hasMargin="0" protect="0" editable="0" dirty="0" borderFillIDRef="6"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="CENTER" linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0"><hp:p id="2147483648" paraPrIDRef="22" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="25"><hp:t>제목</hp:t></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="2000" textheight="2000" baseline="1700" spacing="1300" horzpos="0" horzsize="46884" flags="393216" /></hp:linesegarray></hp:p></hp:subList><hp:cellAddr colAddr="0" rowAddr="0" /><hp:cellSpan colSpan="1" rowSpan="1" /><hp:cellSz width="47907" height="3829" /><hp:cellMargin left="510" right="510" top="141" bottom="141" /></hp:tc></hp:tr></hp:tbl><hp:t /></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="0" vertsize="3829" textheight="3829" baseline="3255" spacing="800" horzpos="0" horzsize="48188" flags="393216" /></hp:linesegarray></hp:p><hp:p id="0" paraPrIDRef="23" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="12"><hp:t>’26.10.28</hp:t></hp:run><hp:run charPrIDRef="64"><hp:t>(수)</hp:t></hp:run><hp:run charPrIDRef="12"><hp:t>, 작성자 (☎ 전화번호)</hp:t></hp:run><hp:run charPrIDRef="12"><hp:t /></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="4629" vertsize="1300" textheight="1300" baseline="1105" spacing="1040" horzpos="0" horzsize="48188" flags="393216" /></hp:linesegarray></hp:p><hp:p id="2147483648" paraPrIDRef="25" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="24"><hp:t> </hp:t></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="25669" vertsize="300" textheight="300" baseline="255" spacing="240" horzpos="0" horzsize="48188" flags="393216" /></hp:linesegarray></hp:p><hp:p id="0" paraPrIDRef="25" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t> □</hp:t></hp:run><hp:run charPrIDRef="16"><hp:t> </hp:t></hp:run><hp:run charPrIDRef="17"><hp:t /></hp:run><hp:run charPrIDRef="21"><hp:t> </hp:t></hp:run><hp:run charPrIDRef="21"><hp:t>이것은^윗첨자 텍스트입니다.</hp:t></hp:run></hp:p></hs:sec>
+
+
+failures:
+    compile::postprocess::tests::superscript_literal_caret
+    compile::postprocess::tests::superscript_multiple
+    compile::postprocess::tests::superscript_run_has_supscript_char_pr
+    compile::postprocess::tests::superscript_split_basic
+    tests::superscript_run_has_supscript_char_pr
+
+test result: FAILED. 3 passed; 5 failed; 0 ignored; 0 measured; 174 filtered out; finished in 0.11s
+

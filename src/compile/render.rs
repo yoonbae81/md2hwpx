@@ -229,12 +229,25 @@ fn render_labeled_item(
     if original_count <= 1 {
         fill_separator(&runs[1], &sep1, Some(&char_pr["bullet"]));
     }
-    replace_run_text_preserving_leading(&runs[2], &label, Some(&char_pr["keyword"]));
-    clear_run_preserving_leading(&runs[3]);
-    if original_count <= 3 {
-        fill_separator(&runs[3], &sep2, Some(&char_pr["keyword"]));
+    if label.is_empty() {
+        // 라벨이 없으면 라벨·간격 run을 모두 지우고 본문 선행 공백도 버린다.
+        // 간격은 템플릿에 따라 run1/라벨 선행/본문 선행으로 분산되어 있으므로,
+        // run1이 비어 있으면 한 칸을 채워 글머리와 본문 사이 공백이 정확히
+        // 한 칸이 되게 한다.
+        replace_run_text(&runs[2], "", Some(&char_pr["keyword"]));
+        replace_run_text(&runs[3], "", Some(&char_pr["keyword"]));
+        if run_text(&runs[1]).is_empty() {
+            replace_run_text(&runs[1], " ", Some(&char_pr["bullet"]));
+        }
+        replace_run_text(&runs[4], &rest, Some(&char_pr["body"]));
+    } else {
+        replace_run_text_preserving_leading(&runs[2], &label, Some(&char_pr["keyword"]));
+        clear_run_preserving_leading(&runs[3]);
+        if original_count <= 3 {
+            fill_separator(&runs[3], &sep2, Some(&char_pr["keyword"]));
+        }
+        replace_run_text_preserving_leading(&runs[4], &rest, Some(&char_pr["body"]));
     }
-    replace_run_text_preserving_leading(&runs[4], &rest, Some(&char_pr["body"]));
     invalidate_layout_cache(paragraph);
     Ok(())
 }

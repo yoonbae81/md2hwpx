@@ -1,0 +1,27 @@
+
+running 2 tests
+test compile::template::tests::named_table_memo_registers_table_variant_prototype ... FAILED
+test tests::two_column_table_uses_native_two_column_prototype ... FAILED
+
+failures:
+
+---- compile::template::tests::named_table_memo_registers_table_variant_prototype stdout ----
+
+thread 'compile::template::tests::named_table_memo_registers_table_variant_prototype' (16218395) panicked at src/compile/template.rs:770:14:
+table-2 prototype이 등록되어야 한다
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- tests::two_column_table_uses_native_two_column_prototype stdout ----
+
+thread 'tests::two_column_table_uses_native_two_column_prototype' (16218396) panicked at src/lib.rs:248:9:
+assertion `left == right` failed: 본문 2열 표는 네이티브 table-2 원형의 borderFill을 써야 한다: ["L:NONE R:DASH T:SOLID/#808080 B:SOLID/#808080 brush:#DFE6F7", "L:DASH R:DASH T:SOLID/#808080 B:SOLID/#808080 brush:#DFE6F7", "L:NONE R:DASH T:SOLID/#808080 B:DASH/#808080 brush:none", "L:DASH R:DASH T:SOLID/#808080 B:DASH/#808080 brush:none", "L:NONE R:DASH T:SOLID/#808080 B:DASH/#808080 brush:none", "L:DASH R:DASH T:SOLID/#808080 B:DASH/#808080 brush:none", "L:NONE R:DASH T:DASH/#808080 B:SOLID/#808080 brush:none", "L:DASH R:DASH T:DASH/#808080 B:SOLID/#808080 brush:none"]
+  left: ["L:DASH R:DASH T:DASH/#808080 B:SOLID/#808080 brush:none", "L:DASH R:DASH T:SOLID/#808080 B:DASH/#808080 brush:none", "L:DASH R:DASH T:SOLID/#808080 B:SOLID/#808080 brush:#DFE6F7", "L:NONE R:DASH T:DASH/#808080 B:SOLID/#808080 brush:none", "L:NONE R:DASH T:SOLID/#808080 B:DASH/#808080 brush:none", "L:NONE R:DASH T:SOLID/#808080 B:SOLID/#808080 brush:#DFE6F7"]
+ right: ["L:DASH R:NONE T:SOLID/#808080 B:DASH/#808080 brush:none", "L:DASH R:NONE T:SOLID/#808080 B:SOLID/#000000 brush:none", "L:DASH R:NONE T:SOLID/#808080 B:SOLID/#808080 brush:#DFE6F7", "L:NONE R:DASH T:SOLID/#808080 B:SOLID/#000000 brush:none", "L:NONE R:DASH T:SOLID/#808080 B:SOLID/#808080 brush:#DFE6F7", "L:NONE R:DASH T:SOLID/#808080 B:SOLID/#808080 brush:none"]
+
+
+failures:
+    compile::template::tests::named_table_memo_registers_table_variant_prototype
+    tests::two_column_table_uses_native_two_column_prototype
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 173 filtered out; finished in 0.08s
+

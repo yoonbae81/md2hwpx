@@ -1,0 +1,13 @@
+
+running 8 tests
+test compile::postprocess::tests::superscript_multiple ... ok
+test compile::postprocess::tests::superscript_literal_caret ... ok
+test compile::postprocess::tests::superscript_split_basic ... ok
+test compile::postprocess::tests::existing_superscript_char_pr_is_reused ... ok
+test compile::postprocess::tests::attached_asterisk_becomes_red_superscript ... ok
+test compile::postprocess::tests::superscript_run_has_supscript_char_pr ... ok
+test tests::superscript_run_has_supscript_char_pr ... ok
+test tests::superscript_roundtrip_preserves_caret ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 174 filtered out; finished in 0.11s
+

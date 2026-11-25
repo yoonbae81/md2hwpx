@@ -108,3 +108,92 @@ pub fn compile_hwpx_labeled(
         },
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn strip_xml_tags(xml: &str) -> String {
+        let mut out = String::with_capacity(xml.len());
+        let mut chars = xml.chars().peekable();
+        while let Some(c) = chars.next() {
+            if c == '<' {
+                for c2 in chars.by_ref() {
+                    if c2 == '>' {
+                        break;
+                    }
+                }
+            } else {
+                out.push(c);
+            }
+        }
+        out
+    }
+
+    fn real_template() -> Vec<u8> {
+        std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/web/public/template.hwpx"
+        ))
+        .expect("web/public/template.hwpx")
+    }
+
+    #[test]
+    fn depth_item_without_label_keeps_single_space_after_glyph() {
+        let template = real_template();
+        // 라벨 없는 depth 항목: 글머리(□/○)와 본문 사이 공백은 한 칸이어야 한다.
+        let md = "제목: T\n\n□ 라벨 없는 항목\n\n○ 라벨 없는 둘째\n";
+        let (bytes, _) = compile_hwpx_bytes(md, &template, &[]).expect("compile must succeed");
+        let (root, _) = crate::compile::hwpx::read_template_parts_bytes(&bytes, "test").unwrap();
+        let xml = crate::shared::xmltree::serialize(&root, true);
+        // run 경계에 tag가 끼므로 태그를 제거한 평문으로 검사한다.
+        let plain = strip_xml_tags(&xml);
+        assert!(plain.contains("□ 라벨 없는 항목"), "{}", plain);
+        assert!(plain.contains("○ 라벨 없는 둘째"), "{}", plain);
+        assert!(!plain.contains("□  "), "double space after □: {}", plain);
+        assert!(!plain.contains("○  "), "double space after ○: {}", plain);
+    }
+
+    #[test]
+    fn mid_document_attach_title_keeps_report_title() {
+        let template = real_template();
+        let md = "보험계약 관련 검토 보고서\n\n본문 첫 문단입니다.\n\n[[붙임]] 별도계약 손실위험 안내\n\n붙임 본문입니다.\n";
+        let (bytes, report) =
+            compile_hwpx_bytes(md, &template, &[]).expect("compile must succeed");
+        // 문서 제목은 그대로고, 표지 변형이 요청되지 않는다.
+        assert_eq!(report.title, "보험계약 관련 검토 보고서");
+        assert!(!report.variants.contains_key("title"), "{:?}", report.variants);
+
+        // section0.xml에서 텍스트 순서 검증: 표지 제목 → 본문 → 붙임 표지 → 붙임 본문.
+        let (root, _) = crate::compile::hwpx::read_template_parts_bytes(&bytes, "test").unwrap();
+        let xml = crate::shared::xmltree::serialize(&root, true);
+        let at = |needle: &str| xml.find(needle).expect(needle);
+        let title_pos = at("보험계약 관련 검토 보고서");
+        let body_pos = at("본문 첫 문단입니다.");
+        let attach_pos = at("별도계약 손실위험 안내");
+        let attach_body_pos = at("붙임 본문입니다.");
+        assert!(
+            title_pos < body_pos && body_pos < attach_pos && attach_pos < attach_body_pos,
+            "attach title must be rendered in place: title={title_pos} body={body_pos} attach={attach_pos} attach_body={attach_body_pos}"
+        );
+        // 붙임 표지 문단은 '붙 임' 라벨을 함께 가진다.
+        assert!(xml.contains("붙 임"), "attach cover label missing");
+    }
+
+    #[test]
+    fn attach_title_at_document_head_still_swaps_cover() {
+        let template = real_template();
+        let md = "[[붙임]] 별도계약 손실위험 안내\n\n본문입니다.\n";
+        let (bytes, report) =
+            compile_hwpx_bytes(md, &template, &[]).expect("compile must succeed");
+        assert_eq!(
+            report.variants.get("title").and_then(|v| v.as_str()),
+            Some("attachment")
+        );
+        let (root, _) = crate::compile::hwpx::read_template_parts_bytes(&bytes, "test").unwrap();
+        let xml = crate::shared::xmltree::serialize(&root, true);
+        // 표지가 붙임 변형으로 바뀌고 셀 텍스트가 명령 텍스트다.
+        assert!(xml.contains("붙 임"));
+        assert!(xml.contains("별도계약 손실위험 안내"));
+    }
+}

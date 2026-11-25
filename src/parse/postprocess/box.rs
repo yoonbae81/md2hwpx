@@ -114,7 +114,16 @@ pub(crate) fn restore_boxes(lines: Vec<String>) -> Vec<String> {
             .or_else(|| recover_highlight_table(&line))
             .or_else(|| rewrite_box_prefix(&line))
         {
-            out.extend(recovered.split('\n').map(str::to_string));
+            let mut group: Vec<String> = recovered.split('\n').map(str::to_string).collect();
+            // 박스 그룹 뒤에 빈 줄을 보장한다. 컴파일 쪽 규칙상 박스는 빈 줄에서
+            // 끊기므로, 이 빈 줄이 없으면 다음 불릿이 박스 항목으로 다시
+            // 흡수되어 왕복이 깨진다.
+            let is_box_cmd = group[0].trim_start().starts_with(dialect::BOX);
+            if is_box_cmd && group[0].trim_start().len() > dialect::BOX.len() {
+                // 제목이 있는 박스 명령(또는 항목이 있는 박스) 뒤에만 빈 줄을 삽입한다.
+                group.push(String::new());
+            }
+            out.extend(group);
         } else {
             out.push(line);
         }
@@ -134,11 +143,11 @@ mod tests {
     fn box_prefix_becomes_box_command() {
         assert_eq!(
             restore_boxes(lines(&["[박스] 요약 내용"])),
-            lines(&["[[박스]] 요약 내용"])
+            lines(&["[[박스]] 요약 내용", ""])
         );
         assert_eq!(
             restore_boxes(lines(&["[Box] summary"])),
-            lines(&["[[박스]] summary"])
+            lines(&["[[박스]] summary", ""])
         );
         // 본문이 비면 명령 줄만 남는다.
         assert_eq!(restore_boxes(lines(&["[박스]"])), lines(&["[[박스]]"]));
@@ -167,6 +176,7 @@ mod tests {
                 "  - (경제성) 발전량 증가에 따른 전기요금 절감 효과",
                 "  - ① 연간 발전량: 약 24MWh",
                 "  - ☞ 주의 사항",
+                "",
             ])
         );
     }

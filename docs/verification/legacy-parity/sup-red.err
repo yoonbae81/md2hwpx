@@ -1,0 +1,13 @@
+   Compiling hwpx v1.0.0 (/Users/y/Github/md2hwpx)
+warning: function `superscript_char_pr_ids` is never used
+   --> src/compile/postprocess.rs:457:4
+    |
+457 | fn superscript_char_pr_ids(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `hwpx` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.11s
+     Running unittests src/lib.rs (target/debug/deps/hwpx-e9f9a7ce8cd9b185)
+error: test failed, to rerun pass `--lib`

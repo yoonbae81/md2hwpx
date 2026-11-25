@@ -1,0 +1,8 @@
+
+running 3 tests
+test compile::template::tests::named_table_memo_registers_table_variant_prototype ... ok
+test tests::three_column_table_keeps_default_prototype_and_solid_last_row ... ok
+test tests::two_column_table_uses_native_two_column_prototype ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 173 filtered out; finished in 0.14s
+

@@ -278,6 +278,11 @@ impl<'a> SourceParser<'a> {
             let line = self.lines[index].trim_end_matches('\t').to_string();
             let stripped = line.trim();
             if stripped.is_empty() {
+                // 빈 줄은 문단 경계다. 열린 박스도 여기서 끊는다 — 박스
+                // 항목은 표기 줄과 빈 줄 없이 이어 쓰는 것이 규칙이고,
+                // 작성자가 명시적으로 줄을 나눴으면 박스 수집도 거기서
+                // 끝난다.
+                self.close_box()?;
                 continue;
             }
             if self.try_box_item(&line, stripped)? {
@@ -294,18 +299,15 @@ impl<'a> SourceParser<'a> {
                 self.first_nonempty = Some(stripped.to_string());
             }
             if let Some((variant, text)) = title_command(stripped) {
-                let has_title_command = self
-                    .blocks
-                    .iter()
-                    .any(|(k, _)| k == TITLE_VARIANT_BLOCK);
-                let has_body_blocks = self
-                    .blocks
-                    .iter()
-                    .any(|(k, _)| k != TITLE_VARIANT_BLOCK && k != TITLE_TEXT_BLOCK);
-
-                if !has_title_command && !has_body_blocks {
-                    self.blocks
-                        .push((TITLE_VARIANT_BLOCK.to_string(), variant.to_string()));
+                let body_exists = self.blocks.iter().any(|(k, _)| k.as_str() != TITLE_VARIANT_BLOCK && k.as_str() != TITLE_TEXT_BLOCK);
+                if variant == dialect::ATTACH_VARIANT && body_exists {
+                    let text = text.unwrap_or_else(|| self.title.clone());
+                    self.blocks.push(("attach_title".to_string(), text));
+                    continue;
+                }
+                let has_title_command = self.blocks.iter().any(|(k, _)| k == TITLE_VARIANT_BLOCK);
+                if !has_title_command && !body_exists {
+                    self.blocks.push((TITLE_VARIANT_BLOCK.to_string(), variant.to_string()));
                     if let Some(text) = text {
                         self.blocks.push((TITLE_TEXT_BLOCK.to_string(), text));
                     }
@@ -1120,6 +1122,61 @@ mod tests {
         assert_eq!(blocks[0].1, "하나");
         assert_eq!(blocks[1].0, "asterisk");
         assert_eq!(blocks[1].1, "둘");
+    }
+
+    #[test]
+    fn blank_line_closes_box_and_bullets_resume_their_depth() {
+        // 박스 뒤 빈 줄은 작성자가 박스를 끊은 것이다. 빈 줄 뒤 불릿은
+        // 박스에 흡수되지 않고 들여쓰기 순위로 원래 깊이에 돌아간다.
+        let src = lines(
+            "제목: T\n\
+             \x20 - (주계약)\n\
+             \x20   - (공정영향 최소화) 착수통지제 도입\n\
+             \n\
+             [[박스]] KEDO 원전 주계약 조문\n\
+             \x20 - 30.5 (Turn-over) 인계증명서 조항\n\
+             \x20 - (시사점) 지연보상 조건에 반영\n\
+             \n\
+             \x20   - (관리·운전책임 명확화) 책임 일괄 이전\n\
+             \x20     * 수행범위·귀책 기준 명문화",
+        );
+        let (_, blocks) = parse_source(&src, "테스트").unwrap();
+        let kinds: Vec<&str> = blocks.iter().map(|b| b.0.as_str()).collect();
+        // 박스는 2행(표기 제목 제외한 항목 2개)이고, 뒤의 불릿은 박스 밖이다.
+        let box_json = &blocks
+            .iter()
+            .find(|b| b.0 == "box")
+            .expect("box block exists")
+            .1;
+        assert!(box_json.contains("30.5 (Turn-over)"));
+        assert!(box_json.contains("(시사점)"));
+        assert!(
+            !box_json.contains("관리·운전책임"),
+            "blank line must end the box: {box_json}"
+        );
+        assert!(
+            kinds.iter().filter(|k| **k == "box").count() == 1,
+            "single box block: {kinds:?}"
+        );
+        // 뒤 불릿은 깊이 순위(2칸→depth1, 4칸→depth2)로 돌아간다. 들여쓴
+        // `*`는 기존 보조표기 규칙(asterisk 블록) 그대로다.
+        let depths: Vec<&str> = blocks
+            .iter()
+            .enumerate()
+            .filter(|(_, b)| b.1.contains("관리·운전책임") || b.1.contains("수행범위"))
+            .map(|(i, _)| kinds[i])
+            .collect();
+        assert_eq!(depths, vec!["depth2", "asterisk"], "blocks: {kinds:?}");
+    }
+
+    #[test]
+    fn blank_line_between_box_items_still_ends_the_box() {
+        // 박스 항목 사이에 빈 줄을 넣으면 첫 항목까지만 박스다.
+        let src = lines("제목: T\n[[박스]] 제목\n  - 첫 항목\n\n  - 둘째 항목");
+        let (_, blocks) = parse_source(&src, "테스트").unwrap();
+        let box_json = &blocks.iter().find(|b| b.0 == "box").expect("box").1;
+        assert!(box_json.contains("첫 항목"));
+        assert!(!box_json.contains("둘째 항목"), "{box_json}");
     }
 
     #[test]
